@@ -1,9 +1,9 @@
 # Satisfying Drifting Game Architecture Document
 
-**Version:** 1.0  
+**Version:** 1.1  
 **Date:** October 28, 2025  
 **Project:** Satisfying Drifting  
-**Engine:** Phaser 3 + TypeScript
+**Engine:** Phaser 3.90+ + TypeScript
 
 ---
 
@@ -18,6 +18,7 @@ This architecture is designed to support the gameplay mechanics defined in the G
 | Date | Version | Description | Author |
 | :--- | :------ | :---------- | :----- |
 | October 28, 2025 | 1.0 | Initial architecture document | Maya (Game Developer) |
+| October 28, 2025 | 1.1 | Updated to Phaser 3.90+ best practices; added memory leak prevention patterns, `preDestroy()` lifecycle methods, scene `shutdown()` guidelines, and modern cleanup patterns | Maya (Game Developer) |
 
 ---
 
@@ -25,7 +26,7 @@ This architecture is designed to support the gameplay mechanics defined in the G
 
 ### Architecture Summary
 
-**Satisfying Drifting** uses a modular, component-based architecture built on Phaser 3.70+ with TypeScript in strict mode. The architecture prioritizes:
+**Satisfying Drifting** uses a modular, component-based architecture built on Phaser 3.90+ with TypeScript in strict mode. The architecture prioritizes:
 
 - **Physics-First Design**: Custom drift physics layer on top of Phaser's Arcade Physics, with real-time quality evaluation systems
 - **Performance-Critical Systems**: Object pooling for particles, optimized collision detection, and 60 FPS targeting on 2015+ desktop hardware
@@ -44,7 +45,7 @@ The architecture supports the GDD's focus on "feel" and responsiveness through t
 
 ### Technology Stack
 
-**Core Engine:** Phaser 3.70+  
+**Core Engine:** Phaser 3.90+ (latest stable)  
 **Language:** TypeScript 5.0+ (Strict Mode)  
 **Build Tool:** Vite (fast HMR, optimized production builds)  
 **Package Manager:** npm  
@@ -98,12 +99,15 @@ Satisfying-Drifting/
 - Scenes follow Phaser lifecycle: `init()` → `preload()` → `create()` → `update()`
 - Scene data passed via `this.scene.start('NextScene', { data })` for transitions
 - Scenes are lightweight orchestrators; logic lives in systems
+- **Proper cleanup** in `shutdown()` method: remove event listeners, destroy tweens, clear timers (see Scene Management Best Practices below)
 
 **Game Object Pattern:**
 - **Component-Based Design**: `Car` extends `Phaser.GameObjects.Sprite` with drift physics component
 - Reusable classes in `src/gameObjects/` (e.g., `Car.ts`, `DriftTrail.ts`, `QualityMeter.ts`)
 - Type-safe properties using TypeScript interfaces from `src/types/`
 - Objects register with relevant systems (e.g., Car registers with DriftPhysics)
+- **Lifecycle Methods**: Implement `preDestroy()` for cleanup, optional `addedToScene()` / `removedFromScene()` callbacks (Phaser 3.50+)
+- **Memory Management**: Always call `removeAllListeners()` in cleanup to prevent memory leaks
 
 **System Architecture:**
 - **Singleton Managers**: Systems instantiated once in BootScene, passed via registry
@@ -131,6 +135,7 @@ Satisfying-Drifting/
 - **MenuScene**: Track selection and mode choice (Practice/Score)
 - **GameScene**: Core gameplay loop with physics updates
 - **ResultsScene**: Post-game stats and retry options (Score mode only)
+- **Scene Cleanup**: Each scene must implement `shutdown()` method for proper resource cleanup (see best practices section below)
 
 **Files to Create:**
 - `src/scenes/BootScene.ts`
@@ -139,6 +144,61 @@ Satisfying-Drifting/
 - `src/scenes/GameScene.ts`
 - `src/scenes/ResultsScene.ts`
 - `src/systems/SceneManager.ts` (optional helper for complex transitions)
+
+---
+
+### Scene Management Best Practices (Phaser 3.90+)
+
+**Proper Scene Cleanup Pattern:**
+
+All scenes must implement the `shutdown()` method to prevent memory leaks. This method is called automatically when a scene stops.
+
+```typescript
+class GameScene extends Phaser.Scene {
+    private updateListener?: () => void;
+    private pointerListener?: () => void;
+    
+    create(): void {
+        // Set up listeners
+        this.updateListener = () => this.handleUpdate();
+        this.pointerListener = () => this.handlePointer();
+        
+        this.events.on('update', this.updateListener);
+        this.input.on('pointerdown', this.pointerListener);
+        
+        // Systems register themselves with scene events
+    }
+    
+    shutdown(): void {
+        // CRITICAL: Clean up all event listeners to prevent memory leaks
+        
+        // Remove scene-specific event listeners
+        if (this.updateListener) {
+            this.events.off('update', this.updateListener);
+            this.updateListener = undefined;
+        }
+        
+        if (this.pointerListener) {
+            this.input.off('pointerdown', this.pointerListener);
+            this.pointerListener = undefined;
+        }
+        
+        // Clean up custom managers/systems
+        // Note: Don't destroy Game Objects manually - Phaser handles this automatically
+        // Only clean up listeners and references
+        
+        // If you have custom managers with event listeners:
+        // this.driftQuality?.removeAllListeners();
+        // this.audioManager?.removeAllListeners();
+    }
+}
+```
+
+**Important Notes:**
+- **DO NOT** manually destroy Game Objects in `shutdown()` - Phaser handles this automatically
+- **DO** remove all custom event listeners you've added
+- **DO** clean up references to prevent memory leaks
+- **DO** call `removeAllListeners()` on any custom event emitters
 
 ---
 
@@ -339,8 +399,43 @@ Satisfying-Drifting/
 
 **Object Pooling:**
 - **Particle Systems**: Tire smoke particles (pool of 200 sprites, reuse on emit)
+  - **Modern Pattern (Phaser 3.60+)**: Use `ParticleEmitter.preDestroy()` for proper cleanup
+  - Ensures all particles, internal arrays, and framebuffers are properly cleaned up
 - **Drift Trail Sprites**: Skid mark segments (pool of 100, fade out and reuse)
 - **UI Text Objects**: Score popups (pool of 10, prevent allocation during gameplay)
+
+**Particle Emitter Best Practice (Phaser 3.60+):**
+
+```typescript
+export class ParticlePool {
+    private emitters: Phaser.GameObjects.Particles.ParticleEmitter[];
+    private scene: Phaser.Scene;
+    
+    constructor(scene: Phaser.Scene) {
+        this.scene = scene;
+        this.emitters = [];
+    }
+    
+    createEmitter(config: Phaser.Types.GameObjects.Particles.ParticleEmitterConfig): Phaser.GameObjects.Particles.ParticleEmitter {
+        const emitter = this.scene.add.particles(0, 0, 'particle', config);
+        this.emitters.push(emitter);
+        return emitter;
+    }
+    
+    // Phaser 3.60+ cleanup method
+    destroy(): void {
+        // Modern cleanup for particle emitters
+        this.emitters.forEach(emitter => {
+            if (emitter) {
+                // preDestroy cleans up all resources, particles, internal arrays
+                emitter.preDestroy();
+            }
+        });
+        this.emitters = [];
+        this.scene = null as any;
+    }
+}
+```
 
 **Asset Optimization:**
 - **Texture Atlases**: Single atlas for UI elements (buttons, icons, quality meter)
@@ -405,6 +500,14 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
         target: 60,
         forceSetTimeOut: false   // Use requestAnimationFrame
     },
+    // Phaser 3.60+ - Better depth sorting (auto-detect for best performance)
+    stableSort: -1,
+    
+    // Phaser 3.70+ - Disable FX pipelines if not using them (performance optimization)
+    // Set to true if you're NOT using Pre/Post FX effects
+    disablePreFX: false,  // We're not using Pre FX effects
+    disablePostFX: false, // We're not using Post FX effects
+    
     scene: [] // Scenes registered in main.ts
 };
 ```
@@ -586,6 +689,7 @@ public calculateQuality(
 - **Use scene data** for communication: `this.scene.start('GameScene', { trackId: 'tutorial', mode: GameMode.Practice })`
 - **Implement proper event handling**: Always use `this.events.once()` for one-time listeners to prevent memory leaks
 - **Avoid memory leaks**: Destroy game objects explicitly when no longer needed
+- **Never manually destroy Game Objects in shutdown()**: Phaser handles this automatically - only clean up custom event listeners and managers
 
 **Game Object Design:**
 - **Extend Phaser classes appropriately**: 
@@ -598,10 +702,13 @@ public calculateQuality(
   - `preUpdate()` for Phaser objects that need automatic updates
   - Manual `update()` calls from scene for manager systems
 
-**Example:**
+**Game Object Lifecycle (Phaser 3.50+):**
+
+Modern Phaser provides automatic scene lifecycle callbacks:
+
 ```typescript
 export class Car extends Phaser.GameObjects.Sprite {
-    private driftPhysics: DriftPhysics;
+    private driftPhysics?: DriftPhysics;
     
     constructor(scene: Phaser.Scene, x: number, y: number) {
         super(scene, x, y, 'car');
@@ -610,15 +717,106 @@ export class Car extends Phaser.GameObjects.Sprite {
         scene.physics.add.existing(this);
     }
     
-    public update(time: number, delta: number): void {
-        this.driftPhysics.update(delta);
+    // Called automatically when added to a Scene
+    addedToScene(): void {
+        console.log('Car added to scene');
+        // Initialize scene-specific resources if needed
     }
     
-    public destroy(): void {
-        this.driftPhysics.destroy();
-        super.destroy();
+    // Called automatically when removed from a Scene
+    removedFromScene(): void {
+        console.log('Car removed from scene');
+        // Clean up scene-specific resources if needed
+    }
+    
+    public update(time: number, delta: number): void {
+        if (this.driftPhysics) {
+            this.driftPhysics.update(delta);
+        }
+    }
+    
+    // Phaser 3.50+: Use preDestroy for cleanup
+    preDestroy(): void {
+        // Clean up before parent destroy is called
+        if (this.driftPhysics) {
+            this.driftPhysics.destroy();
+            this.driftPhysics = undefined;
+        }
+        
+        // CRITICAL: Remove all event listeners to prevent memory leaks
+        this.removeAllListeners();
+    }
+    
+    // Modern destroy accepts optional fromScene parameter (managed by Phaser)
+    public destroy(fromScene?: boolean): void {
+        super.destroy(fromScene);
     }
 }
+```
+
+**Memory Leak Prevention Checklist:**
+
+Critical cleanup items for all custom Game Objects and Systems:
+
+- [ ] All custom Game Objects implement `preDestroy()` for cleanup
+- [ ] Event listeners removed with `removeAllListeners()` or specific `off()` calls
+- [ ] Scene `shutdown()` method cleans up custom managers (but NOT Game Objects)
+- [ ] Physics bodies are properly destroyed (automatic with Game Object destruction)
+- [ ] Particle emitters use `preDestroy()` method (Phaser 3.60+)
+- [ ] Texture Manager textures removed when no longer needed
+- [ ] Audio Manager listeners cleaned up (Game BLUR, FOCUS, PRE_STEP events)
+- [ ] Scale Manager RESIZE listeners removed in destroy methods
+- [ ] Tween callbacks and animations properly cleared
+
+**Example Custom Manager with Proper Cleanup:**
+
+```typescript
+export class DriftQuality extends Phaser.Events.EventEmitter {
+    private scene: Phaser.Scene;
+    private scaleResizeHandler?: () => void;
+    
+    constructor(scene: Phaser.Scene) {
+        super();
+        this.scene = scene;
+        
+        // Store handler reference for proper cleanup
+        this.scaleResizeHandler = () => this.handleResize();
+        this.scene.scale.on('resize', this.scaleResizeHandler);
+    }
+    
+    private handleResize(): void {
+        // Handle resize logic
+    }
+    
+    destroy(): void {
+        // CRITICAL: Remove specific listener reference
+        if (this.scaleResizeHandler) {
+            this.scene.scale.off('resize', this.scaleResizeHandler);
+            this.scaleResizeHandler = undefined;
+        }
+        
+        // Remove all custom event listeners
+        this.removeAllListeners();
+        
+        // Null out references
+        this.scene = null as any;
+    }
+}
+```
+
+**Display and Update List Management (Performance):**
+
+For objects that don't need updates or rendering every frame:
+
+```typescript
+// For static decorations that never change
+const staticDecoration = this.add.image(100, 100, 'decoration');
+staticDecoration.removeFromUpdateList(); // Saves CPU cycles
+
+// For data processors that don't need rendering
+const dataProcessor = this.make.sprite({ key: 'invisible' }, false);
+dataProcessor.removeFromDisplayList(); // Still updates, but not rendered
+dataProcessor.addToUpdateList(); // Ensure it's in update list if needed
 ```
 
 ---
@@ -806,7 +1004,7 @@ The implementation is broken down into three phases aligned with the GDD develop
 **Story Epics:**
 - **Epic 1.1: Project Setup & Configuration**
   - Initialize Vite project with TypeScript
-  - Install and configure Phaser 3.70+
+  - Install and configure Phaser 3.90+ (latest stable)
   - Set up ESLint, Prettier, Jest
   - Create GitHub Actions workflow for CI/CD
   - Configure GitHub Pages deployment
@@ -976,7 +1174,8 @@ The implementation is broken down into three phases aligned with the GDD develop
 | :--- | :---------- | :----- | :------------------ |
 | **Drift physics don't "feel" right** | High | Critical | Iterate early in Phase 2; expose all physics params in config for rapid tuning; playtest weekly; budget extra time for physics refinement |
 | **Performance issues on target hardware** | Medium | High | Implement PerformanceMonitor early; profile in Phase 2; object pooling for particles; dynamic quality reduction; test on 2015 hardware |
-| **Audio playback issues across browsers** | Medium | Medium | Use well-supported formats (OGG + MP3 fallbacks); implement Web Audio API unlock on first interaction; test Safari/Firefox/Chrome early |
+| **Memory leaks from improper cleanup** | Medium | Medium | Follow Phaser 3.90+ cleanup patterns; implement `preDestroy()` on all custom objects; use `removeAllListeners()`; test with Chrome DevTools memory profiler; ensure `shutdown()` methods don't manually destroy Game Objects |
+| **Audio playback issues across browsers** | Medium | Medium | Use well-supported formats (OGG + MP3 fallbacks); implement Web Audio API unlock on first interaction; test Safari/Firefox/Chrome early; properly clean up audio event listeners |
 | **Track collision detection inaccurate** | Low | Medium | Use simple polygon colliders (not pixel-perfect); validate collision boundaries visually with debug mode; test edge cases |
 | **Vite build issues with Phaser** | Low | Medium | Follow official Phaser 3 + Vite template; manual chunk Phaser library; test production build in Phase 1 |
 | **Scope creep (too many features)** | Medium | High | Strict adherence to 3-phase roadmap; defer leaderboards/mobile to post-launch; focus on 5 tracks + 2 modes only |
@@ -995,6 +1194,228 @@ This is the highest probability/impact risk because the entire game depends on s
 - Capture video of desired drift behavior from reference games (Absolute Drift, art of rally)
 - Define "feel" success criteria: "Can complete Tutorial track within 5 attempts feeling in control"
 - Budget 1 full week in Phase 2 for pure physics iteration
+
+---
+
+## Common Pitfalls and Solutions
+
+This section highlights common mistakes when working with Phaser 3.90+ and how to avoid them, based on the latest best practices.
+
+### Memory Leak Pitfalls
+
+**❌ Pitfall 1: Not removing event listeners**
+```typescript
+// BAD - Memory leak
+class MyScene extends Phaser.Scene {
+    create() {
+        this.events.on('update', () => this.handleUpdate());
+    }
+    // No cleanup - listener persists even after scene stops
+}
+```
+
+**✅ Solution: Always remove listeners in shutdown()**
+```typescript
+// GOOD - Proper cleanup
+class MyScene extends Phaser.Scene {
+    private updateHandler?: () => void;
+    
+    create() {
+        this.updateHandler = () => this.handleUpdate();
+        this.events.on('update', this.updateHandler);
+    }
+    
+    shutdown() {
+        if (this.updateHandler) {
+            this.events.off('update', this.updateHandler);
+            this.updateHandler = undefined;
+        }
+    }
+}
+```
+
+**❌ Pitfall 2: Manually destroying Game Objects in shutdown()**
+```typescript
+// BAD - Causes double-destroy errors
+class MyScene extends Phaser.Scene {
+    private car?: Car;
+    
+    shutdown() {
+        this.car?.destroy(); // Phaser already does this!
+    }
+}
+```
+
+**✅ Solution: Let Phaser handle Game Object destruction**
+```typescript
+// GOOD - Only clean up custom systems
+class MyScene extends Phaser.Scene {
+    private car?: Car;
+    private customManager?: CustomManager;
+    
+    shutdown() {
+        // Only clean up custom managers, not Game Objects
+        this.customManager?.destroy();
+        this.customManager = undefined;
+        // car will be destroyed automatically by Phaser
+    }
+}
+```
+
+**❌ Pitfall 3: Missing preDestroy() in custom Game Objects**
+```typescript
+// BAD - No cleanup before destruction
+export class Car extends Phaser.GameObjects.Sprite {
+    private listeners: (() => void)[] = [];
+    
+    destroy() {
+        super.destroy();
+        // Too late! References already cleaned by parent
+    }
+}
+```
+
+**✅ Solution: Use preDestroy() for cleanup**
+```typescript
+// GOOD - Cleanup before parent destroy
+export class Car extends Phaser.GameObjects.Sprite {
+    private listeners: (() => void)[] = [];
+    
+    preDestroy() {
+        // Clean up BEFORE parent destroy
+        this.listeners.forEach(fn => this.off('event', fn));
+        this.listeners = [];
+        this.removeAllListeners();
+    }
+    
+    destroy(fromScene?: boolean) {
+        super.destroy(fromScene);
+    }
+}
+```
+
+### Physics Pitfalls
+
+**❌ Pitfall 4: Not checking for Transform component before enabling physics**
+```typescript
+// BAD - Can throw errors on Container objects
+const container = this.add.container(100, 100);
+this.physics.world.enable(container); // Error! No Transform component
+```
+
+**✅ Solution: Phaser 3.60+ checks automatically, or verify manually**
+```typescript
+// GOOD - Modern Phaser checks automatically (3.60+)
+const sprite = this.add.sprite(100, 100, 'texture');
+this.physics.world.enable(sprite); // Safe
+
+// Or check manually for edge cases
+if ('x' in gameObject && 'y' in gameObject) {
+    this.physics.world.enable(gameObject);
+}
+```
+
+### Performance Pitfalls
+
+**❌ Pitfall 5: Not using object pooling for particles**
+```typescript
+// BAD - Creates new particle emitter every frame
+update() {
+    const particles = this.add.particles(x, y, 'smoke');
+    particles.explode(10);
+    // Memory leak - emitters never cleaned up!
+}
+```
+
+**✅ Solution: Use particle emitter pooling with proper cleanup**
+```typescript
+// GOOD - Reuse particle emitters
+class ParticleManager {
+    private emitters: ParticleEmitter[] = [];
+    
+    getEmitter(): ParticleEmitter {
+        return this.emitters.find(e => !e.on) || this.createEmitter();
+    }
+    
+    destroy() {
+        this.emitters.forEach(emitter => emitter.preDestroy());
+        this.emitters = [];
+    }
+}
+```
+
+**❌ Pitfall 6: Updating objects that don't need updates**
+```typescript
+// BAD - Background image in update list
+const background = this.add.image(0, 0, 'background');
+// Background never changes, wastes CPU cycles
+```
+
+**✅ Solution: Remove static objects from update list**
+```typescript
+// GOOD - Remove from update list
+const background = this.add.image(0, 0, 'background');
+background.removeFromUpdateList(); // Saves CPU cycles
+```
+
+### Scene Management Pitfalls
+
+**❌ Pitfall 7: Not using scene data for communication**
+```typescript
+// BAD - Global variables for scene communication
+let globalTrackId = 'tutorial';
+
+class GameScene extends Phaser.Scene {
+    create() {
+        const trackId = globalTrackId; // Fragile, hard to track
+    }
+}
+```
+
+**✅ Solution: Use scene data parameter**
+```typescript
+// GOOD - Type-safe scene data
+interface GameSceneData {
+    trackId: string;
+    mode: GameMode;
+}
+
+class GameScene extends Phaser.Scene {
+    create(data: GameSceneData) {
+        const { trackId, mode } = data;
+    }
+}
+
+// Starting the scene
+this.scene.start('GameScene', { 
+    trackId: 'tutorial', 
+    mode: GameMode.Practice 
+});
+```
+
+### TypeScript Pitfalls
+
+**❌ Pitfall 8: Using `any` type to bypass strict mode**
+```typescript
+// BAD - Defeats purpose of TypeScript
+private myData: any;
+```
+
+**✅ Solution: Use proper types or unknown with type guards**
+```typescript
+// GOOD - Proper typing
+interface DriftData {
+    angle: number;
+    speed: number;
+}
+private myData: DriftData;
+
+// Or use unknown with type guards
+private userData: unknown;
+if (typeof userData === 'object' && userData !== null) {
+    // Type guard ensures safety
+}
+```
 
 ---
 

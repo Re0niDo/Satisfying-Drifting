@@ -1,9 +1,9 @@
 # Satisfying Drifting - Prototype Design Document
 
-**Version:** 1.0  
-**Date:** October 27, 2025  
+**Version:** 1.1  
+**Date:** October 28, 2025  
 **Project Type:** Web Game Prototype  
-**Engine:** Phaser 3 + TypeScript  
+**Engine:** Phaser 3.90+ + TypeScript  
 **Platform:** Web (GitHub Pages)
 
 ---
@@ -12,7 +12,7 @@
 
 ### Core Concept
 
-Satisfying Drifting is a top-down 2D drift mastery game built with Phaser 3 and TypeScript. Players control a single car through keyboard inputs, learning to execute controlled drifts on progressively challenging tracks. The game prioritizes physics feel and player feedback over content volume, creating a meditative, flow-state experience focused purely on the satisfaction of perfect vehicle control.
+Satisfying Drifting is a top-down 2D drift mastery game built with Phaser 3.90+ and TypeScript. Players control a single car through keyboard inputs, learning to execute controlled drifts on progressively challenging tracks. The game prioritizes physics feel and player feedback over content volume, creating a meditative, flow-state experience focused purely on the satisfaction of perfect vehicle control.
 
 ### Target Audience
 
@@ -22,7 +22,7 @@ Satisfying Drifting is a top-down 2D drift mastery game built with Phaser 3 and 
 ### Platform & Technical Requirements
 
 **Primary Platform:** Web (Desktop browsers - Chrome, Firefox, Safari)  
-**Engine:** Phaser 3 + TypeScript  
+**Engine:** Phaser 3.90+ + TypeScript  
 **Performance Target:** 60 FPS on mid-range desktop (2015+ hardware)  
 **Screen Support:** 1280x720 minimum, scales to 1920x1080  
 **Deployment:** GitHub Pages (static site)
@@ -149,8 +149,9 @@ Top-down 2D car with arcade-style physics tuned for drift satisfaction. The car 
 - Implement custom drift physics on top of Arcade Physics velocity
 - Track "drift angle" (angle between velocity vector and car facing)
 - Drift quality = function of drift angle, speed, and consistency
-- Need particle emitter tied to drift state (tire smoke intensity)
-- Audio pitch/volume tied to drift angle and speed
+- Particle emitter configuration uses `Phaser.Types.Animations.PlayAnimationConfig` for granular control (Phaser 3.70+)
+- Audio pitch/volume control via Web Audio API with proper context management (suspended vs closed)
+- Proper cleanup: Implement `preDestroy()` method for Car entity to prevent memory leaks
 
 **Dependencies:**
 - Input system (keyboard polling)
@@ -217,6 +218,7 @@ Real-time system that continuously evaluates drift performance based on multiple
   - Intensity: Scales with drift quality (0-100 particles/s)
   - Color: Poor = gray, Good = white, Perfect = white with subtle color tint
   - Trail length: Longer trails at higher quality
+  - **Modern Config (Phaser 3.70+)**: Use `Phaser.Types.Animations.PlayAnimationConfig` for particle animations with random start frames and repeat control
   
 - **Skid Marks:**
   - Persistent marks on track surface
@@ -237,6 +239,7 @@ Real-time system that continuously evaluates drift performance based on multiple
   - Volume: 0-100% based on drift angle (louder = more angle)
   - Pitch: Varies with speed (higher pitch = faster)
   - Filter: Perfect drifts have cleaner tone, poor drifts sound rough
+  - **Implementation**: Web Audio API with proper context suspension (not closure) for hot-reload environments
   
 - **Engine Sound:**
   - RPM increases during throttle in drift
@@ -268,11 +271,12 @@ Real-time system that continuously evaluates drift performance based on multiple
 
 **Implementation Notes:**
 - Drift quality calculated every frame in physics update
-- Particle systems need dynamic emission rates
-- Audio system needs real-time pitch/volume control (Web Audio API)
+- Particle systems use dynamic emission rates with `Phaser.Types.Animations.PlayAnimationConfig` for granular animation control
+- Audio system needs real-time pitch/volume control (Web Audio API with context suspension, not closure)
 - Score multipliers stack multiplicatively
-- Need data structure to track drift "sessions" (start/end times)
-- Consider debug mode that shows all quality factors numerically
+- Data structure to track drift "sessions" (start/end times)
+- Debug mode shows all quality factors numerically
+- **Memory Management**: Particle emitters must implement proper cleanup with `preDestroy()` method (Phaser 3.60+)
 
 **Dependencies:**
 - Physics system (provides drift angle, speed, position data)
@@ -649,6 +653,13 @@ interface TrackConfig {
 - `ResultsScene` - End of run stats
 - `ControlsScene` - Controls reference
 
+**Scene Lifecycle Best Practices (Phaser 3.90+):**
+- All scenes must implement `shutdown()` method for proper cleanup
+- Remove event listeners in `shutdown()`, NOT in destroy
+- Do NOT manually destroy Game Objects in `shutdown()` - Phaser handles this
+- Use `this.events.off()` with specific handler references to prevent memory leaks
+- Scene data passed via `this.scene.start('NextScene', { data })` for type-safe communication
+
 **UI Components (Reusable):**
 - `Button` - Interactive menu button
 - `QualityBar` - Drift quality indicator
@@ -662,10 +673,11 @@ interface GameSettings {
   effectsVolume: number;  // 0-10 (0 = muted)
 }
 ```
-- Saved to `localStorage` on change
-- Loaded on game start
+- Saved to `localStorage` on change with validation and error handling
+- Loaded on game start with try-catch for corrupted data
 - Applied to Phaser sound manager
 - Conversion: settingValue / 10 = Phaser volume (0.0-1.0)
+- Implement data versioning for future migrations
 
 **Performance:**
 - UI elements are static sprites/text, not recreated each frame
@@ -679,15 +691,17 @@ interface GameSettings {
 ### Technology Stack
 
 **Core Framework:**
-- **Phaser 3** (v3.80+) - Game framework
+- **Phaser 3.90+** (latest stable) - Game framework
 - **TypeScript** (v5.0+) - Type-safe development
-- **Vite** - Build tool and dev server
+- **Vite** - Build tool and dev server with fast HMR
 - **Node.js** (v18+) - Development environment
 
 **Asset Pipeline:**
 - Image formats: PNG (sprites), JPG (backgrounds)
-- Audio formats: OGG + M4A (cross-browser compatibility)
+- Audio formats: OGG + MP3 (cross-browser compatibility, avoid M4A)
+- Audio Sprites: Use `this.load.audioSprite()` with JSON-first pattern
 - Asset loading: Phaser AssetLoader with progress tracking
+- Support for Base64 data URIs in audio (Phaser 3.90+)
 
 **Deployment:**
 - GitHub Pages (static site hosting)
@@ -768,11 +782,32 @@ class Car extends Phaser.GameObjects.Sprite {
   // Input state
   input: InputState;
   
+  // Event listener references for cleanup
+  private updateHandler?: () => void;
+  
   // Methods
   update(delta: number): void;
   applyPhysics(delta: number): void;
   checkDriftState(): void;
   handleInput(): void;
+  
+  // Phaser 3.50+ lifecycle methods
+  addedToScene(): void;      // Called when added to scene
+  removedFromScene(): void;  // Called when removed from scene
+  
+  // Phaser 3.50+ cleanup pattern
+  preDestroy(): void {
+    // Clean up BEFORE parent destroy
+    if (this.updateHandler) {
+      this.off('update', this.updateHandler);
+      this.updateHandler = undefined;
+    }
+    this.removeAllListeners();
+  }
+  
+  destroy(fromScene?: boolean): void {
+    super.destroy(fromScene);
+  }
 }
 ```
 
@@ -809,17 +844,20 @@ class Car extends Phaser.GameObjects.Sprite {
 - <3s initial load time
 
 **Optimization Strategies:**
-- **Object Pooling:** Particle systems reuse objects
-- **Texture Atlases:** Combine small sprites into single texture
-- **Audio Sprites:** Combine sound effects into single file
-- **Lazy Loading:** Load tracks on-demand, not all at once
-- **Delta Time:** All physics/animations use delta time for consistent behavior
+- **Object Pooling:** Particle systems reuse objects (implement proper `preDestroy()` cleanup)
+- **Texture Atlases:** Combine small sprites into single texture for better batching
+- **Audio Sprites:** Combine sound effects using `this.load.audioSprite()` with JSON-first pattern
+- **Lazy Loading:** Load tracks on-demand using `this.load.sceneFile()` for dynamic scene management
+- **Delta Time:** All physics/animations use delta time for consistent behavior across frame rates
 - **Render Optimization:** Static UI elements cached, only update on change
+- **Display/Update List Management:** Remove static objects from update list with `removeFromUpdateList()`
 
 **Profiling Points:**
 - Physics update loop (should be <5ms per frame)
-- Particle system emission (limit max particles to 200)
-- Audio system (Web Audio API latency monitoring)
+- Particle system emission (limit max particles to 200, implement proper cleanup)
+- Audio system (Web Audio API with context suspension monitoring)
+- Memory usage (Chrome DevTools heap snapshots to detect leaks)
+- Event listener cleanup (verify all handlers are removed in scene shutdown)
 
 ### Data Flow Architecture
 
@@ -844,18 +882,21 @@ Screen Render (60 FPS)
 ### Development Workflow
 
 **Phase 1: Core Physics (Week 1-2)**
-1. Set up Phaser + TypeScript + Vite project
-2. Implement basic car movement (acceleration, steering)
-3. Add drift physics (friction modes, lateral velocity)
-4. Create single test track
-5. Iterate on feel until satisfying
+1. Set up Phaser 3.90+ + TypeScript + Vite project
+2. Configure TypeScript with Phaser types properly
+3. Implement basic car movement (acceleration, steering)
+4. Add drift physics (friction modes, lateral velocity)
+5. Implement proper cleanup patterns (`preDestroy()`, scene `shutdown()`)
+6. Create single test track
+7. Iterate on feel until satisfying
 
 **Phase 2: Feedback Systems (Week 3)**
-1. Implement particle system (tire smoke, skid marks)
-2. Add audio system (tire screech, engine sounds)
+1. Implement particle system with modern config (Phaser 3.70+ animation support)
+2. Add audio system with Web Audio API (context suspension, not closure)
 3. Create drift quality evaluation
 4. Build quality bar UI component
-5. Tune feedback to match physics
+5. Implement proper particle emitter cleanup with `preDestroy()`
+6. Tune feedback to match physics
 
 **Phase 3: Content & Menus (Week 4)**
 1. Design and create 5 MVP tracks
@@ -914,24 +955,32 @@ Screen Render (60 FPS)
 - Drift initiation feels natural
 - Maintaining drift requires skill but is achievable
 - 60 FPS maintained during gameplay
+- **Memory Management:** No leaks detected in Chrome DevTools heap snapshots
+- **Scene Transitions:** Restart (R key) works cleanly without memory buildup
 - **Developer gut check:** "This is fun to drive"
 
 **Feedback Systems Success:**
 - Can identify drift quality without looking at UI
 - Audio feedback teaches proper technique
 - Visual feedback is satisfying to watch
+- **Memory Management:** Particle systems cleaned up properly with `preDestroy()`
+- **Audio Management:** Web Audio context suspended properly, no context leaks
 - **Playtester feedback:** "I can feel when I'm improving"
 
 **Content & Menus Success:**
 - Can navigate entire game flow with keyboard only
 - Track progression teaches drift mastery
 - Settings persist between sessions
+- **Scene Management:** All scenes implement proper `shutdown()` cleanup
+- **Event Listeners:** No memory leaks from unremoved listeners
 - **Playtester feedback:** "I want to beat my best score"
 
 **Polish & Launch Success:**
-- 60 FPS on target browsers
+- 60 FPS on target browsers (Chrome, Firefox, Safari)
 - <3s load time
 - No critical bugs
+- **Zero memory leaks:** Multiple play sessions show stable memory usage
+- **Clean scene transitions:** No errors in console during scene switches
 - Deployed and playable on GitHub Pages
 - **Public feedback:** "This feels great to play"
 
@@ -942,6 +991,14 @@ Screen Render (60 FPS)
 - Try alternative physics approaches (Box2D, Matter.js)
 - Get feedback from experienced game developers
 - Consider pivoting to simpler arcade physics
+
+**If memory leaks are detected:**
+- Use Chrome DevTools heap snapshots to identify leaking objects
+- Verify all scenes implement `shutdown()` with proper cleanup
+- Check that event listeners are removed with specific handler references
+- Ensure Game Objects implement `preDestroy()` method
+- Validate particle emitters use `preDestroy()` for cleanup
+- Test scene transitions extensively (restart multiple times)
 
 **If scope is too large:**
 - Reduce to 3 tracks for MVP (Tutorial, Practice, Challenge)
@@ -975,6 +1032,7 @@ Screen Render (60 FPS)
 | Date | Version | Description | Author |
 | :--- | :------ | :---------- | :----- |
 | 2025-10-27 | 1.0 | Initial prototype design document | Alex (Game Designer) |
+| 2025-10-28 | 1.1 | Updated to Phaser 3.90+ best practices; added memory management patterns, scene lifecycle guidance, modern particle/audio configurations, and cleanup requirements | Alex (Game Designer) |
 
 ---
 
