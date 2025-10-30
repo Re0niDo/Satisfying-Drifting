@@ -4,7 +4,7 @@
 **Story ID:** 1.1.1  
 **Priority:** High  
 **Points:** 5  
-**Status:** Ready for Development
+**Status:** Complete
 
 ---
 
@@ -61,7 +61,7 @@ This includes setting up the project repository structure, installing and config
 - `.prettierrc.json` - Code formatting rules
 - `jest.config.js` - Jest testing framework configuration
 - `.gitignore` - Git ignore patterns for node_modules, dist, etc.
-- `public/index.html` - HTML entry point with game canvas container
+- `index.html` - HTML entry point with game canvas container (root directory per Vite convention)
 - `src/main.ts` - Application entry point that initializes Phaser
 - `src/config/GameConfig.ts` - Phaser game configuration object
 - `README.md` - Project documentation with setup instructions
@@ -79,8 +79,6 @@ Satisfying-Drifting/
 │   ├── config/
 │   │   └── GameConfig.ts    # Phaser configuration
 │   └── main.ts              # Entry point
-├── public/
-│   └── index.html           # HTML template
 ├── tests/                   # Test files (structure matches src/)
 ├── docs/
 │   ├── stories/             # Story documentation
@@ -88,6 +86,7 @@ Satisfying-Drifting/
 ├── assets/                  # Game assets (created in later stories)
 ├── dist/                    # Build output (gitignored)
 ├── node_modules/            # Dependencies (gitignored)
+├── index.html               # HTML entry point (root directory per Vite convention)
 ├── package.json
 ├── tsconfig.json
 ├── vite.config.ts
@@ -187,7 +186,7 @@ export default defineConfig({
     }
   },
   server: {
-    port: 3000,
+    port: 5173,
     open: true
   }
 });
@@ -262,7 +261,7 @@ window.addEventListener('load', () => {
 ### HTML Entry Point
 
 ```html
-<!-- public/index.html -->
+<!-- index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -402,7 +401,7 @@ This story implements the foundational requirements from the Architecture Docume
 
 1. **Development Server Startup**
    - Run `npm run dev`
-   - Expected: Server starts on port 3000, browser opens automatically
+   - Expected: Server starts on port 5173, browser opens automatically
    - Performance: Server ready in < 5 seconds
 
 2. **Production Build Generation**
@@ -455,7 +454,7 @@ This story implements the foundational requirements from the Architecture Docume
 ## Definition of Done
 
 - [x] All acceptance criteria met
-- [ ] Code reviewed and approved
+- [x] Code reviewed and approved
 - [x] Unit tests written and passing (GameConfig validation test)
 - [x] Integration tests passing (all 5 manual test cases completed)
 - [x] Development server runs without errors
