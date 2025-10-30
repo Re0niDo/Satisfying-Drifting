@@ -8,7 +8,7 @@ A top-down drifting racing game built with Phaser 3 and TypeScript.
 
 ### Prerequisites
 
-- **Node.js** 18+ (LTS recommended)
+- **Node.js** 20.19+ (22.x recommended for CI compatibility)
 - **npm** (comes with Node.js)
 - **Git** for version control
 
@@ -91,7 +91,7 @@ npm run preview
 The `deploy.yml` GitHub Actions workflow builds and deploys the game to GitHub Pages on every push to the `main` branch or when manually dispatched from the Actions tab.
 
 1. **Enable GitHub Pages:** Once per repository, navigate to **Settings → Pages → Build and deployment** and set the source to **GitHub Actions**.
-2. **Automatic deployments:** Commits to `main` run `npm ci`, `npx tsc --noEmit`, and `npm run build` on Ubuntu runners, then publish the generated artifact using the latest Pages actions.
+2. **Automatic deployments:** Commits to `main` run `npm ci`, `npx tsc --noEmit`, and `npm run build` on Ubuntu runners using Node.js 22, then publish the generated artifact using the latest Pages actions.
 3. **Manual redeploy:** In **Actions → Build and Deploy to GitHub Pages**, choose **Run workflow** to redeploy the current `main` contents.
 4. **Live site:** The published game is available at [https://re0nido.github.io/Satisfying-Drifting/](https://re0nido.github.io/Satisfying-Drifting/).
 
