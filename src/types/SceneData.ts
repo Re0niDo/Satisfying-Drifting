@@ -16,8 +16,17 @@ export interface BootSceneData {
  * Can be extended to pass configuration or state from BootScene.
  */
 export interface PreloadSceneData {
-  // Optional: Add properties here if BootScene needs to pass data to PreloadScene
-  // For example: skipIntro?: boolean;
+  // Optional data passed from BootScene
+  fastLoad?: boolean; // Skip minimum display time if true
+}
+
+/**
+ * Data passed to the MenuScene.
+ * Contains information about asset loading completion.
+ */
+export interface MenuSceneData {
+  // Data passed to MenuScene after preload
+  assetsLoaded: boolean;
 }
 
 /**
