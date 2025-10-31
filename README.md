@@ -58,34 +58,6 @@ A top-down drifting racing game built with Phaser 3 and TypeScript.
 6. Run `npm run format` to ensure consistent formatting
 7. Commit changes with meaningful commit messages
 
-## Testing
-
-This project uses Jest with ts-jest for testing. Tests are located in the `tests/` directory and mirror the structure of `src/`.
-
-**Run tests:**
-```bash
-npm test
-```
-
-**Run tests in watch mode:**
-```bash
-npm test:watch
-```
-
-## Building for Production
-
-**Create optimized production build:**
-```bash
-npm run build
-```
-
-The build output will be in the `dist/` folder.
-
-**Preview production build locally:**
-```bash
-npm run preview
-```
-
 ## Deployment
 
 The `deploy.yml` GitHub Actions workflow builds and deploys the game to GitHub Pages on every push to the `main` branch or when manually dispatched from the Actions tab.
