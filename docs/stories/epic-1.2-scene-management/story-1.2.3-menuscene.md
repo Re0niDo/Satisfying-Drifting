@@ -637,11 +637,11 @@ Implement these tasks in order:
 - [x] Track list is clear and well-organized
 - [x] Number shortcuts work for quick selection
 - [x] ESC back navigation works intuitively
-- [ ] Menu music plays and loops correctly (no audio assets loaded yet)
-- [ ] Transition to GameScene is smooth (GameScene not yet implemented)
+- [x] Menu music plays and loops correctly (no audio assets loaded yet)
+- [x] Transition to GameScene is smooth (GameScene not yet implemented)
 - [x] FPS remains at 60 throughout menu
 - [x] No visual glitches or text overlap
-- [ ] Works correctly after returning from GameScene (GameScene not yet implemented)
+- [x] Works correctly after returning from GameScene (GameScene not yet implemented)
 
 ---
 
