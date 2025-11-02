@@ -30,6 +30,28 @@ export interface MenuSceneData {
 }
 
 /**
+ * Data passed to the GameScene.
+ * Contains selected game mode and track information.
+ */
+export interface GameSceneData {
+  mode: 'practice' | 'score';
+  trackId: string;
+  trackName: string;
+}
+
+/**
+ * Track selection data structure.
+ * Defines the information for each available track.
+ */
+export interface TrackInfo {
+  id: string;
+  name: string;
+  difficulty: 'Easy' | 'Medium' | 'Hard' | 'Expert' | 'Sandbox';
+  description: string;
+  optimalTime: number; // seconds (0 for no time limit)
+}
+
+/**
  * Base interface for all scene data types.
  * Extend this for additional scene data interfaces.
  */
