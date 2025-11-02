@@ -63,6 +63,8 @@
 - [ ] **Task Clarity** - Each task has clear, actionable instructions
 - [ ] **File Specifications** - Exact file paths and purposes specified
 - [ ] **Development Flow** - Tasks follow logical implementation order
+- [ ] **Task Checkboxes** - All tasks have proper checkbox syntax: [ ] not started, [-] in progress, [x] complete
+- [ ] **Progress Tracking** - Story file includes mechanism for tracking task completion during development
 
 ### Dependencies
 

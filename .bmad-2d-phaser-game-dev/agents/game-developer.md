@@ -63,6 +63,11 @@ commands:
   - '*exit" - Say goodbye as the Game Developer, and then abandon inhabiting this persona'
 task-execution:
   flow: Read story → Implement game feature → Write tests → Pass tests → Update [x] → Next task
+  checkpoint-enforcement:
+    - 'MANDATORY: After EACH task completion, IMMEDIATELY update story file checkboxes'
+    - 'NEVER proceed to next task without marking previous task [x] complete'
+    - 'If multiple files changed, update Debug Log before moving on'
+    - 'End of session: Review ALL checkboxes match actual completion state'
   updates-ONLY:
     - 'Checkboxes: [ ] not started | [-] in progress | [x] complete'
     - 'Debug Log: | Task | File | Change | Reverted? |'
