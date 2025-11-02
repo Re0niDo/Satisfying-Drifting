@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import type { PreloadSceneData, MenuSceneData } from '../types/SceneData';
-import { ImageAssets, TrackAssets, UIAssets, AudioAssets } from '../config/AssetConfig';
+import { ImageAssets, UIAssets, AudioAssets } from '../config/AssetConfig';
 import { AssetManager } from '../systems/AssetManager';
 import { isDevEnvironment } from '../utils/env';
 
@@ -88,7 +88,17 @@ export class PreloadScene extends Phaser.Scene {
     const barX = (width - barWidth) / 2;
     const barY = height / 2 + 50;
 
-    // Create loading text (static, no updates needed)
+    // Create title text
+    this.add
+      .text(width / 2, barY - 100, 'SATISFYING DRIFTING', {
+        fontSize: '32px',
+        color: '#ffffff',
+        fontFamily: 'Arial',
+        fontStyle: 'bold',
+      })
+      .setOrigin(0.5);
+
+    // Create loading text (static label)
     this.add
       .text(width / 2, barY - 50, 'Loading...', {
         fontSize: '24px',
@@ -97,7 +107,7 @@ export class PreloadScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
-    // Create progress bar background (outline) - static, no updates needed
+    // Create progress bar background (outline)
     const progressBox = this.add.graphics();
     progressBox.fillStyle(0x222222, 0.8);
     progressBox.fillRect(barX, barY, barWidth, barHeight);
@@ -116,7 +126,7 @@ export class PreloadScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
-    // Create asset loading text (will be updated)
+    // Create asset loading text (will be updated with categories)
     this.assetText = this.add
       .text(width / 2, barY + 80, '', {
         fontSize: '14px',
@@ -163,29 +173,54 @@ export class PreloadScene extends Phaser.Scene {
     // Register error handlers for placeholder generation
     assetManager.registerErrorHandlers(this);
     
-    // Queue all image assets (sprites)
+    // Progressive loading strategy: Critical → UI → Audio
+    // Track images loaded on-demand when selected in MenuScene
+    this.queueCriticalAssets(assetManager);
+    this.queueUIAssets(assetManager);
+    this.queueAudioAssets(assetManager);
+
+    if (isDevEnvironment()) {
+      console.log('[PreloadScene] Progressive loading strategy initiated');
+    }
+  }
+
+  /**
+   * Queue critical assets needed for any scene (< 100KB total)
+   * These load first to minimize time-to-interactive
+   */
+  private queueCriticalAssets(assetManager: AssetManager): void {
     assetManager.queueAssets(this, [
-      ImageAssets.CAR_SPRITE,
-      ImageAssets.PARTICLE_SMOKE,
-      ImageAssets.PARTICLE_SPARKLE
+      ImageAssets.PARTICLE_SMOKE,    // 8x8 texture ~1KB
+      ImageAssets.PARTICLE_SPARKLE,  // 8x8 texture ~1KB
+      ImageAssets.CAR_SPRITE,        // 32x32 texture ~2KB
     ]);
 
-    // Queue all track images
-    assetManager.queueAssets(this, [
-      TrackAssets.TRACK_TUTORIAL,
-      TrackAssets.TRACK_SERPENTINE,
-      TrackAssets.TRACK_HAIRPIN,
-      TrackAssets.TRACK_GAUNTLET,
-      TrackAssets.TRACK_SANDBOX
-    ]);
+    if (isDevEnvironment()) {
+      console.log('[PreloadScene] Critical assets queued');
+    }
+  }
 
-    // Queue all UI assets
+  /**
+   * Queue UI assets (buttons, meters, icons)
+   * These load second to enable menu interaction
+   */
+  private queueUIAssets(assetManager: AssetManager): void {
     assetManager.queueAssets(this, [
       UIAssets.BUTTON,
       UIAssets.METER_BAR
     ]);
 
-    // Queue all audio - SFX
+    if (isDevEnvironment()) {
+      console.log('[PreloadScene] UI assets queued');
+    }
+  }
+
+  /**
+   * Queue audio assets (music and SFX)
+   * These load last as they can play while user navigates menu
+   */
+  private queueAudioAssets(assetManager: AssetManager): void {
+    // Queue SFX
     assetManager.queueAssets(this, [
       AudioAssets.sfx.TIRE_SCREECH,
       AudioAssets.sfx.ENGINE,
@@ -193,14 +228,14 @@ export class PreloadScene extends Phaser.Scene {
       AudioAssets.sfx.PERFECT_DRIFT
     ]);
 
-    // Queue all audio - Music
+    // Queue Music
     assetManager.queueAssets(this, [
       AudioAssets.music.MENU,
       AudioAssets.music.GAMEPLAY
     ]);
 
     if (isDevEnvironment()) {
-      console.log('[PreloadScene] All assets queued via AssetManager');
+      console.log('[PreloadScene] Audio assets queued');
     }
   }
 
@@ -228,12 +263,24 @@ export class PreloadScene extends Phaser.Scene {
   }
 
   private updateAssetText(key: string): void {
-    // Display current asset being loaded
-    const displayKey = key || 'Loading...';
-    this.assetText.setText(displayKey);
+    // Categorize the asset being loaded for better user feedback
+    let category = 'asset';
+    
+    if (key.includes('music') || key.includes('sfx') || key.includes('audio')) {
+      category = 'audio';
+    } else if (key.includes('particle') || key.includes('car') || key.includes('sprite')) {
+      category = 'graphics';
+    } else if (key.includes('ui') || key.includes('button') || key.includes('meter')) {
+      category = 'interface';
+    } else if (key.includes('track')) {
+      category = 'track';
+    }
+
+    // Display current asset category being loaded
+    this.assetText.setText(`Loading ${category}...`);
 
     if (isDevEnvironment()) {
-      console.log(`[PreloadScene] Loaded: ${displayKey}`);
+      console.log(`[PreloadScene] Loaded: ${key} (${category})`);
     }
   }
 

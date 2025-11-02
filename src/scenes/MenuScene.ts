@@ -4,7 +4,8 @@ import type {
   GameSceneData,
   TrackInfo,
 } from '../types/SceneData';
-import { AudioAssets } from '../config/AssetConfig';
+import { AudioAssets, TrackAssets } from '../config/AssetConfig';
+import { AssetManager } from '../systems/AssetManager';
 import { isDevEnvironment } from '../utils/env';
 
 /**
@@ -70,6 +71,10 @@ export class MenuScene extends Phaser.Scene {
   private trackTexts: Phaser.GameObjects.Text[] = [];
   private titleText?: Phaser.GameObjects.Text;
   private instructionText?: Phaser.GameObjects.Text;
+  
+  // Track loading state
+  private isLoadingTrack: boolean = false;
+  private loadingText?: Phaser.GameObjects.Text;
 
   constructor() {
     super({ key: 'MenuScene' });
@@ -406,6 +411,70 @@ export class MenuScene extends Phaser.Scene {
   }
 
   private startGame(selectedTrack: TrackInfo): void {
+    if (!this.selectedMode) {
+      console.error('[MenuScene] No mode selected');
+      return;
+    }
+    
+    // Prevent multiple simultaneous loads
+    if (this.isLoadingTrack) {
+      return;
+    }
+
+    // Get track asset key from track ID
+    const trackAssetKey = `track-${selectedTrack.id}`;
+    const trackAsset = Object.values(TrackAssets).find(
+      (asset) => asset.key === trackAssetKey
+    );
+
+    if (!trackAsset) {
+      console.error(`[MenuScene] Track asset not found: ${trackAssetKey}`);
+      return;
+    }
+
+    // Check if track is already loaded
+    if (this.textures.exists(trackAsset.key)) {
+      if (isDevEnvironment()) {
+        console.log(`[MenuScene] Track already loaded: ${trackAsset.key}`);
+      }
+      this.transitionToGame(selectedTrack);
+      return;
+    }
+
+    // Load track on-demand
+    if (isDevEnvironment()) {
+      console.log(`[MenuScene] Loading track on-demand: ${trackAsset.key}`);
+    }
+
+    this.isLoadingTrack = true;
+
+    // Show loading indicator
+    const { width, height } = this.cameras.main;
+    this.loadingText = this.add
+      .text(width / 2, height - 50, 'Loading track...', {
+        fontSize: '18px',
+        color: '#ffffff',
+        fontFamily: 'Arial',
+      })
+      .setOrigin(0.5);
+
+    // Use AssetManager's on-demand loading
+    AssetManager.loadTrackOnDemand(this, trackAsset, () => {
+      // Clean up loading indicator
+      this.loadingText?.destroy();
+      this.loadingText = undefined;
+      this.isLoadingTrack = false;
+
+      if (isDevEnvironment()) {
+        console.log(`[MenuScene] Track loaded successfully: ${trackAsset.key}`);
+      }
+
+      // Transition to game
+      this.transitionToGame(selectedTrack);
+    });
+  }
+
+  private transitionToGame(selectedTrack: TrackInfo): void {
     if (!this.selectedMode) {
       console.error('[MenuScene] No mode selected');
       return;

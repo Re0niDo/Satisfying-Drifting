@@ -263,6 +263,66 @@ export class AssetManager {
     }
 
     /**
+     * Load a track image on-demand (called from MenuScene when track is selected)
+     * This prevents loading all 5 tracks during initial PreloadScene (~2.5MB saved)
+     * 
+     * @param scene - Scene to load track in (typically MenuScene)
+     * @param trackAsset - Track asset definition from TrackAssets config
+     * @param onComplete - Callback when track finishes loading
+     */
+    public static loadTrackOnDemand(
+        scene: Phaser.Scene,
+        trackAsset: AssetDefinition,
+        onComplete?: () => void
+    ): void {
+        const { key, path } = trackAsset;
+
+        // Check if already loaded
+        if (scene.textures.exists(key)) {
+            if (isDevEnvironment()) {
+                console.log(`[AssetManager] Track already loaded: ${key}`);
+            }
+            if (onComplete) {
+                onComplete();
+            }
+            return;
+        }
+
+        if (isDevEnvironment()) {
+            console.log(`[AssetManager] Loading track on-demand: ${key}`);
+        }
+
+        // Load track image
+        scene.load.image(key, path);
+
+        // Set up one-time completion handler
+        scene.load.once('complete', () => {
+            if (isDevEnvironment()) {
+                console.log(`[AssetManager] Track loaded: ${key}`);
+            }
+            if (onComplete) {
+                onComplete();
+            }
+        });
+
+        // Handle load errors gracefully
+        scene.load.once('loaderror', (file: Phaser.Loader.File) => {
+            if (file.key === key) {
+                console.warn(`[AssetManager] Failed to load track: ${key}, creating placeholder`);
+                // Create placeholder for missing track using existing method
+                const assetManager = AssetManager.getInstance();
+                assetManager.createPlaceholder(scene, key, 'image');
+                if (onComplete) {
+                    onComplete();
+                }
+            }
+        });
+
+        // Start loading
+        scene.load.start();
+    }
+
+    /**
      * Determine asset type from format or file extension
      * @param formatOrPath - Format string or file path
      * @returns Asset type ('image', 'audio', etc.)

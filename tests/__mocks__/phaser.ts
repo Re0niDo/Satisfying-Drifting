@@ -68,6 +68,12 @@ class Scene {
   public load = {
     on: jest.fn(),
     off: jest.fn(),
+    once: jest.fn(),
+    image: jest.fn(),
+    start: jest.fn(),
+  };
+  public textures = {
+    exists: jest.fn(() => false),
   };
   public children = {
     list: [] as Array<Text | Rectangle>,

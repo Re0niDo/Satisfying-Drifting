@@ -176,6 +176,9 @@ describe('MenuScene', () => {
         return scene.cameras.main;
       });
 
+      // Mock track already loaded (skip on-demand loading)
+      jest.spyOn(scene.textures, 'exists').mockReturnValue(true);
+
       (scene as any).selectedMode = 'practice';
       (scene as any).currentSelection = 0;
       (scene as any).menuState = 'TRACK_SELECTION';
@@ -206,13 +209,16 @@ describe('MenuScene', () => {
 
       const fadeOutSpy = jest.spyOn(scene.cameras.main, 'fadeOut');
 
+      // Mock track already loaded (skip on-demand loading)
+      jest.spyOn(scene.textures, 'exists').mockReturnValue(true);
+
       // Setup for game start
       (scene as any).selectedMode = 'score';
       const testTrack = {
-        id: 'test',
-        name: 'Test Track',
+        id: 'tutorial', // Use valid track ID
+        name: 'Tutorial Circuit',
         difficulty: 'Easy' as const,
-        description: 'Test',
+        description: 'Learn the basics',
         optimalTime: 30,
       };
 

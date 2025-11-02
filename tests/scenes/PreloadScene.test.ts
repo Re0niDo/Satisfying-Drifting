@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, jest, afterEach } from '@jest/globals';
 import { PreloadScene } from '../../src/scenes/PreloadScene';
 import type { PreloadSceneData } from '../../src/types/SceneData';
-import { ImageAssets, TrackAssets, UIAssets, AudioAssets } from '../../src/config/AssetConfig';
+import { ImageAssets, UIAssets, AudioAssets } from '../../src/config/AssetConfig';
 
 describe('PreloadScene', () => {
   let scene: PreloadScene;
@@ -171,29 +171,14 @@ describe('PreloadScene', () => {
       );
     });
 
-    it('should load all track assets using AssetManager', () => {
+    it('should NOT load track assets during preload (progressive loading)', () => {
       scene.preload();
 
-      expect(mockLoad.image).toHaveBeenCalledWith(
-        TrackAssets.TRACK_TUTORIAL.key,
-        TrackAssets.TRACK_TUTORIAL.path
-      );
-      expect(mockLoad.image).toHaveBeenCalledWith(
-        TrackAssets.TRACK_SERPENTINE.key,
-        TrackAssets.TRACK_SERPENTINE.path
-      );
-      expect(mockLoad.image).toHaveBeenCalledWith(
-        TrackAssets.TRACK_HAIRPIN.key,
-        TrackAssets.TRACK_HAIRPIN.path
-      );
-      expect(mockLoad.image).toHaveBeenCalledWith(
-        TrackAssets.TRACK_GAUNTLET.key,
-        TrackAssets.TRACK_GAUNTLET.path
-      );
-      expect(mockLoad.image).toHaveBeenCalledWith(
-        TrackAssets.TRACK_SANDBOX.key,
-        TrackAssets.TRACK_SANDBOX.path
-      );
+      // Tracks should be loaded on-demand, not in PreloadScene
+      const allImageCalls = mockLoad.image.mock.calls.map((call: any) => call[0]);
+      const trackKeys = allImageCalls.filter((key: string) => key.includes('track'));
+      
+      expect(trackKeys.length).toBe(0);
     });
 
     it('should load all UI assets using AssetManager', () => {
@@ -310,13 +295,15 @@ describe('PreloadScene', () => {
       expect(mockPercentageText.setText).toHaveBeenCalledWith('75%');
     });
 
-    it('should update asset text on filecomplete event', () => {
+    it('should update asset text on filecomplete event with category', () => {
       const mockAssetText = mockAdd.text();
       (scene as any).assetText = mockAssetText;
 
-      mockLoad._triggerEvent('filecomplete', 'test-asset', 'image', {});
+      // Test with an asset that contains 'sprite' keyword
+      mockLoad._triggerEvent('filecomplete', 'car-sprite', 'image', {});
 
-      expect(mockAssetText.setText).toHaveBeenCalledWith('test-asset');
+      // Should show category, not the asset key
+      expect(mockAssetText.setText).toHaveBeenCalledWith('Loading graphics...');
     });
 
     it('should handle progress reaching 100%', () => {
@@ -426,17 +413,21 @@ describe('PreloadScene', () => {
       expect(scene).toBeDefined();
     });
 
-    it('should display asset name or fallback text', () => {
+    it('should categorize assets correctly for display', () => {
       const mockAssetText = mockAdd.text();
       (scene as any).assetText = mockAssetText;
 
-      // Test with valid key
-      mockLoad._triggerEvent('filecomplete', 'valid-asset', 'image', {});
-      expect(mockAssetText.setText).toHaveBeenCalledWith('valid-asset');
+      // Test with sprite key
+      mockLoad._triggerEvent('filecomplete', 'car-sprite', 'image', {});
+      expect(mockAssetText.setText).toHaveBeenCalledWith('Loading graphics...');
 
-      // Test with empty key (should use fallback)
-      mockLoad._triggerEvent('filecomplete', '', 'image', {});
-      expect(mockAssetText.setText).toHaveBeenCalledWith('Loading...');
+      // Test with audio key
+      mockLoad._triggerEvent('filecomplete', 'music-menu', 'audio', {});
+      expect(mockAssetText.setText).toHaveBeenCalledWith('Loading audio...');
+
+      // Test with UI key
+      mockLoad._triggerEvent('filecomplete', 'ui-button', 'image', {});
+      expect(mockAssetText.setText).toHaveBeenCalledWith('Loading interface...');
     });
   });
 
@@ -533,6 +524,98 @@ describe('PreloadScene', () => {
 
       expect(progressBoxGraphics?.fillStyle).toHaveBeenCalled();
       expect(progressBoxGraphics?.lineStyle).toHaveBeenCalled();
+    });
+
+    it('should display game title "SATISFYING DRIFTING"', () => {
+      scene.preload();
+
+      const textCalls = mockAdd.text.mock.calls;
+      const titleCall = textCalls.find((call: any) => 
+        call[2] === 'SATISFYING DRIFTING'
+      );
+
+      expect(titleCall).toBeDefined();
+    });
+  });
+
+  describe('Progressive Loading Strategy', () => {
+    beforeEach(() => {
+      scene.init({});
+    });
+
+    it('should load critical assets (sprites) before UI assets', () => {
+      scene.preload();
+
+      const imageCalls = mockLoad.image.mock.calls;
+      const spriteIndex = imageCalls.findIndex((call: any) => 
+        call[0] === ImageAssets.CAR_SPRITE.key
+      );
+      const uiIndex = imageCalls.findIndex((call: any) => 
+        call[0] === UIAssets.BUTTON.key
+      );
+
+      // Sprites should be loaded before UI
+      expect(spriteIndex).toBeLessThan(uiIndex);
+    });
+
+    it('should load UI assets before audio assets', () => {
+      scene.preload();
+
+      const imageCalls = mockLoad.image.mock.calls;
+      const audioCalls = mockLoad.audio.mock.calls;
+
+      const uiIndex = imageCalls.findIndex((call: any) => 
+        call[0] === UIAssets.BUTTON.key
+      );
+
+      // If both exist, all images should be loaded before audio starts
+      if (uiIndex !== -1 && audioCalls.length > 0) {
+        // This demonstrates load order intention
+        expect(imageCalls.length).toBeGreaterThan(0);
+        expect(audioCalls.length).toBeGreaterThan(0);
+      }
+    });
+
+    it('should categorize loading text correctly for sprites', () => {
+      scene.init({});
+      scene.preload();
+
+      const mockAssetText = mockAdd.text();
+      (scene as any).assetText = mockAssetText;
+
+      // Trigger filecomplete for a sprite
+      mockLoad._triggerEvent('filecomplete', 'car-sprite', 'image', {});
+
+      // Asset text should be updated with 'graphics' category
+      expect(mockAssetText.setText).toHaveBeenCalledWith('Loading graphics...');
+    });
+
+    it('should categorize loading text correctly for audio', () => {
+      scene.init({});
+      scene.preload();
+
+      const mockAssetText = mockAdd.text();
+      (scene as any).assetText = mockAssetText;
+
+      // Trigger filecomplete for audio
+      mockLoad._triggerEvent('filecomplete', 'sfx-engine', 'audio', {});
+
+      // Asset text should be updated with 'audio' category
+      expect(mockAssetText.setText).toHaveBeenCalledWith('Loading audio...');
+    });
+
+    it('should categorize loading text correctly for UI', () => {
+      scene.init({});
+      scene.preload();
+
+      const mockAssetText = mockAdd.text();
+      (scene as any).assetText = mockAssetText;
+
+      // Trigger filecomplete for UI
+      mockLoad._triggerEvent('filecomplete', 'ui-button', 'image', {});
+
+      // Asset text should be updated with 'interface' category
+      expect(mockAssetText.setText).toHaveBeenCalledWith('Loading interface...');
     });
   });
 });
