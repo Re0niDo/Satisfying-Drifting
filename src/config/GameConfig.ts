@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { BootScene } from '../scenes/BootScene';
 import { PreloadScene } from '../scenes/PreloadScene';
 import { MenuScene } from '../scenes/MenuScene';
+import { GameScene } from '../scenes/GameScene';
 
 export const gameConfig: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -42,5 +43,5 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
   stableSort: -1,
   disablePreFX: false,
   disablePostFX: false,
-  scene: [BootScene, PreloadScene, MenuScene],
+  scene: [BootScene, PreloadScene, MenuScene, GameScene],
 };

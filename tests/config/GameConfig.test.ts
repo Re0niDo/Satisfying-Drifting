@@ -53,10 +53,10 @@ describe('GameConfig', () => {
         }
     });
 
-    it('should register Boot, Preload, and Menu scenes', () => {
+    it('should register Boot, Preload, Menu, and Game scenes', () => {
         expect(gameConfig.scene).toBeDefined();
         expect(Array.isArray(gameConfig.scene)).toBe(true);
-        expect(gameConfig.scene).toHaveLength(3);
+        expect(gameConfig.scene).toHaveLength(4);
     });
 
     it('should have the correct parent container', () => {
