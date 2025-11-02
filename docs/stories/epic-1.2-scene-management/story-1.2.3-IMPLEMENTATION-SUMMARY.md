@@ -13,7 +13,7 @@
 
 1. **Instruction Text Incomplete** ✅
    - **Issue**: Bottom instruction text didn't mention W/S keys as alternative controls
-   - **Fix**: Updated instruction text to: "Use ↑↓ Arrow Keys or W/S or 1/2, then ENTER"
+   - **Fix**: Updated instruction text to: "Use ↑↓ Arrow Keys or W/S or 1/2"
    - **File Modified**: `src/scenes/MenuScene.ts`
 
 2. **Selection Indicator Artifacts** ✅

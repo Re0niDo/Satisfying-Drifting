@@ -91,11 +91,15 @@ export const AudioAssets = {
         MENU: { 
             key: 'music-menu', 
             path: 'assets/audio/music/menu.mp3',
+            // Keep multiple slots ready so browsers without MP3 support can add an ogg without touching code.
+            urls: ['assets/audio/music/menu.mp3'],
             format: 'mp3'
         },
         GAMEPLAY: { 
             key: 'music-gameplay', 
             path: 'assets/audio/music/gameplay.mp3',
+            // Same approach as MENU - update urls with ogg once the asset lands.
+            urls: ['assets/audio/music/gameplay.mp3'],
             format: 'mp3'
         }
     },
@@ -103,21 +107,26 @@ export const AudioAssets = {
         TIRE_SCREECH: { 
             key: 'sfx-tire-screech', 
             path: 'assets/audio/sfx/tire-screech.mp3',
+            // Allow drop-in ogg alongside the existing MP3 for better coverage.
+            urls: ['assets/audio/sfx/tire-screech.mp3'],
             format: 'mp3'
         },
         ENGINE: { 
             key: 'sfx-engine', 
             path: 'assets/audio/sfx/engine.mp3',
+            urls: ['assets/audio/sfx/engine.mp3'],
             format: 'mp3'
         },
         UI_CLICK: { 
             key: 'sfx-ui-click', 
             path: 'assets/audio/sfx/ui-click.mp3',
+            urls: ['assets/audio/sfx/ui-click.mp3'],
             format: 'mp3'
         },
         PERFECT_DRIFT: { 
             key: 'sfx-perfect-drift', 
             path: 'assets/audio/sfx/perfect-drift.mp3',
+            urls: ['assets/audio/sfx/perfect-drift.mp3'],
             format: 'mp3'
         }
     }

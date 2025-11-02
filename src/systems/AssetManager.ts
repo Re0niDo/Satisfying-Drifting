@@ -15,7 +15,7 @@
  */
 
 import Phaser from 'phaser';
-import type { AssetDefinition } from '../types/AssetTypes';
+import type { AssetDefinition, AudioAssetDefinition } from '../types/AssetTypes';
 import { isDevEnvironment } from '../utils/env';
 
 export class AssetManager {
@@ -29,6 +29,15 @@ export class AssetManager {
     
     /** Track placeholder textures created */
     private placeholders: Map<string, boolean> = new Map();
+
+    /** Track loader handlers per scene so we can unregister without nuking global listeners */
+    private loaderHandlers = new WeakMap<
+        Phaser.Scene,
+        {
+            loadError: (fileObj: Phaser.Loader.File) => void;
+            fileComplete: (key: string) => void;
+        }
+    >();
 
     /**
      * Private constructor enforces singleton pattern
@@ -68,7 +77,14 @@ export class AssetManager {
                     scene.load.image(key, path);
                     break;
                 case 'audio':
-                    scene.load.audio(key, path);
+                    {
+                        const audioDef = assetDef as AudioAssetDefinition;
+                        const urls = Array.isArray(audioDef.urls) ? audioDef.urls.filter(Boolean) : [];
+                        const source =
+                            urls.length > 1 ? urls : path;
+                        // Feed Phaser the full source list when multiple codecs exist; otherwise keep single string for compatibility.
+                        scene.load.audio(key, source);
+                    }
                     break;
                 default:
                     console.warn(`[AssetManager] Unknown asset type for: ${key}`);
@@ -107,8 +123,11 @@ export class AssetManager {
      * @param scene - Scene to register error handlers for
      */
     public registerErrorHandlers(scene: Phaser.Scene): void {
-        // Handle individual file load errors
-        scene.load.on('loaderror', (fileObj: Phaser.Loader.File) => {
+        if (this.loaderHandlers.has(scene)) {
+            return;
+        }
+
+        const loadError = (fileObj: Phaser.Loader.File): void => {
             const key = fileObj.key;
             const url = fileObj.url;
             
@@ -117,21 +136,45 @@ export class AssetManager {
             
             this.failedAssets.set(key, new Error(`Asset not found: ${url}`));
             
-            // Create placeholder for failed asset
+            // Create placeholder for failed asset so the scene keeps moving even in dev.
             this.createPlaceholder(scene, key, fileObj.type);
-        });
+        };
 
-        // Track successful loads
-        scene.load.on('filecomplete', (key: string) => {
+        const fileComplete = (key: string): void => {
             this.loadedAssets.add(key);
             
             if (isDevEnvironment()) {
                 console.log(`[AssetManager] Loaded: ${key}`);
             }
-        });
+        };
 
+        scene.load.on('loaderror', loadError);
+        scene.load.on('filecomplete', fileComplete);
+
+        this.loaderHandlers.set(scene, { loadError, fileComplete });
+
+        // Handle individual file load errors
         if (isDevEnvironment()) {
             console.log('[AssetManager] Error handlers registered');
+        }
+    }
+
+    /**
+     * Remove previously registered loader handlers so repeated scene inits do not stack listeners.
+     * @param scene - Scene to remove handlers from
+     */
+    public unregisterErrorHandlers(scene: Phaser.Scene): void {
+        const handlers = this.loaderHandlers.get(scene);
+        if (!handlers) {
+            return;
+        }
+
+        scene.load.off('loaderror', handlers.loadError);
+        scene.load.off('filecomplete', handlers.fileComplete);
+        this.loaderHandlers.delete(scene);
+
+        if (isDevEnvironment()) {
+            console.log('[AssetManager] Error handlers unregistered');
         }
     }
 
@@ -202,8 +245,10 @@ export class AssetManager {
         
         // Clean up graphics object (prevent memory leak)
         graphics.destroy();
-        
-        console.log(`[AssetManager] Created placeholder texture: ${key} (${width}x${height})`);
+
+        if (isDevEnvironment()) {
+            console.log(`[AssetManager] Created placeholder texture: ${key} (${width}x${height})`);
+        }
     }
 
     /**
@@ -214,7 +259,9 @@ export class AssetManager {
      * @param key - Audio key
      */
     private createAudioPlaceholder(_scene: Phaser.Scene, key: string): void {
-        console.log(`[AssetManager] Audio placeholder for: ${key} (will be silent)`);
+        if (isDevEnvironment()) {
+            console.log(`[AssetManager] Audio placeholder for: ${key} (will be silent)`);
+        }
         // Phaser's audio system handles missing audio gracefully
         // No actual placeholder creation needed
     }

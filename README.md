@@ -43,6 +43,7 @@ A top-down drifting racing game built with Phaser 3 and TypeScript.
 | `npm run preview` | Preview production build locally |
 | `npm test` | Run Jest test suite |
 | `npm test:watch` | Run tests in watch mode |
+| `test:coverage` | Get coverage |
 | `npm run lint` | Check code quality with ESLint |
 | `npm run lint:fix` | Fix auto-fixable linting issues |
 | `npm run format` | Format code with Prettier |

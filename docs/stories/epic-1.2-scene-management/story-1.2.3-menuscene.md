@@ -175,7 +175,7 @@ const buttonSelectedColor = 0x00ff00;
 const buttonTextSize = '24px';
 
 // Instructions
-const instructionText = 'Use ↑↓ Arrow Keys or 1/2, then ENTER';
+const instructionText = 'Use ↑↓ Arrow Keys or 1/2';
 const instructionY = 500;
 const instructionSize = '18px';
 ```

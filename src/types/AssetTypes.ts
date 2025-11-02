@@ -11,6 +11,8 @@ export interface AssetDefinition {
     key: string;
     /** Path relative to assets directory */
     path: string;
+    /** Optional list of alternate source URLs (e.g., ogg + mp3) for loader audio selection */
+    urls?: readonly string[];
     /** Optional format specifier (e.g., 'png', 'ogg') */
     format?: string;
     /** Optional fallback path for alternative format */

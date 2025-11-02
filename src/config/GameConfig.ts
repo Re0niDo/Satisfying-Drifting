@@ -40,7 +40,7 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
     target: 60,
     forceSetTimeOut: false,
   },
-  stableSort: -1,
+  // Avoid unsupported stableSort flag; Phaser scenes handle their own depth sorting.
   disablePreFX: false,
   disablePostFX: false,
   scene: [BootScene, PreloadScene, MenuScene, GameScene],

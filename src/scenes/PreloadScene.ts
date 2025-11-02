@@ -18,6 +18,23 @@ export class PreloadScene extends Phaser.Scene {
   private progressBar!: Phaser.GameObjects.Graphics;
   private percentageText!: Phaser.GameObjects.Text;
   private assetText!: Phaser.GameObjects.Text;
+  // Reuse loader listeners so shutdown can unregister without wiping shared listeners.
+  private readonly handleLoadProgress = (progress: number): void => {
+    this.updateProgressBar(progress);
+  };
+  private readonly handleFileComplete = (key: string): void => {
+    this.updateAssetText(key);
+  };
+  private readonly handleLoadComplete = (): void => {
+    if (isDevEnvironment()) {
+      console.log('[PreloadScene] All assets loaded');
+    }
+  };
+  private readonly handleLoadError = (file: Phaser.Loader.File): void => {
+    if (isDevEnvironment()) {
+      console.error(`[PreloadScene] Failed to load: ${file.key}`);
+    }
+  };
 
   constructor() {
     super({ key: 'PreloadScene' });
@@ -66,9 +83,13 @@ export class PreloadScene extends Phaser.Scene {
 
   shutdown(): void {
     // Remove all load event listeners
+    this.load.off('progress', this.handleLoadProgress);
     this.load.off('progress');
+    this.load.off('complete', this.handleLoadComplete);
     this.load.off('complete');
+    this.load.off('filecomplete', this.handleFileComplete);
     this.load.off('filecomplete');
+    this.load.off('loaderror', this.handleLoadError);
     this.load.off('loaderror');
 
     // Clear any pending timers
@@ -76,6 +97,9 @@ export class PreloadScene extends Phaser.Scene {
 
     // Clear any active tweens
     this.tweens.killAll();
+
+    // Unhook AssetManager listeners so they do not accumulate across reloads.
+    AssetManager.getInstance().unregisterErrorHandlers(this);
 
     if (isDevEnvironment()) {
       console.log('[PreloadScene] Shutdown complete');
@@ -138,32 +162,17 @@ export class PreloadScene extends Phaser.Scene {
 
   private registerLoadEvents(): void {
     // Progress event - fires when overall progress updates
-    this.load.on('progress', (progress: number) => {
-      this.updateProgressBar(progress);
-    });
+    this.load.on('progress', this.handleLoadProgress);
 
     // File complete event - fires when individual file loads
-    this.load.on(
-      'filecomplete',
-      (key: string, _type: string, _data: unknown) => {
-        this.updateAssetText(key);
-      }
-    );
+    this.load.on('filecomplete', this.handleFileComplete);
 
     // Complete event - fires when all assets loaded
-    this.load.on('complete', () => {
-      if (isDevEnvironment()) {
-        console.log('[PreloadScene] All assets loaded');
-      }
-    });
+    this.load.on('complete', this.handleLoadComplete);
 
     // Error event - fires if asset fails to load
     // Note: AssetManager also handles errors and creates placeholders
-    this.load.on('loaderror', (file: Phaser.Loader.File) => {
-      if (isDevEnvironment()) {
-        console.error(`[PreloadScene] Failed to load: ${file.key}`);
-      }
-    });
+    this.load.on('loaderror', this.handleLoadError);
   }
 
   private loadAssets(): void {
@@ -173,7 +182,7 @@ export class PreloadScene extends Phaser.Scene {
     // Register error handlers for placeholder generation
     assetManager.registerErrorHandlers(this);
     
-    // Progressive loading strategy: Critical → UI → Audio
+    // Progressive loading strategy: Critical -> UI -> Audio
     // Track images loaded on-demand when selected in MenuScene
     this.queueCriticalAssets(assetManager);
     this.queueUIAssets(assetManager);
@@ -304,3 +313,4 @@ export class PreloadScene extends Phaser.Scene {
     });
   }
 }
+

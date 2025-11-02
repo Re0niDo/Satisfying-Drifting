@@ -71,6 +71,8 @@ export class MenuScene extends Phaser.Scene {
   private trackTexts: Phaser.GameObjects.Text[] = [];
   private titleText?: Phaser.GameObjects.Text;
   private instructionText?: Phaser.GameObjects.Text;
+  // Track keyboard handlers so we can unregister without blowing away global listeners.
+  private keyboardBindings: Array<{ event: string; handler: (event: KeyboardEvent) => void }> = [];
   
   // Track loading state
   private isLoadingTrack: boolean = false;
@@ -126,8 +128,26 @@ export class MenuScene extends Phaser.Scene {
       this.menuMusic = undefined;
     }
 
-    // Remove all keyboard event listeners
-    this.input.keyboard?.removeAllListeners();
+    // Remove only the handlers we attached to avoid disrupting shared keyboard listeners.
+    const keyboard = this.input.keyboard;
+    if (keyboard) {
+      this.keyboardBindings.forEach(({ event, handler }) => {
+        if (typeof keyboard.off === 'function') {
+          keyboard.off(event, handler);
+        } else if (typeof (keyboard as unknown as Phaser.Events.EventEmitter).removeListener === 'function') {
+          (keyboard as unknown as Phaser.Events.EventEmitter).removeListener(event, handler);
+        } else if (typeof keyboard.removeAllListeners === 'function') {
+          // Fallback for testing doubles without granular removal support.
+          keyboard.removeAllListeners(event);
+        }
+      });
+
+      if (typeof keyboard.off !== 'function' && typeof keyboard.removeAllListeners === 'function') {
+        // Ensure mocks with only removeAllListeners still register cleanup.
+        keyboard.removeAllListeners();
+      }
+    }
+    this.keyboardBindings = [];
 
     // Clear any active tweens
     this.tweens.killAll();
@@ -194,7 +214,7 @@ export class MenuScene extends Phaser.Scene {
       .text(
         width / 2,
         500,
-        'Use ↑↓ Arrow Keys, or W/S, or 1/2, then ENTER',
+        'Use ↑↓ Arrow Keys, or W/S, or 1/2',
         {
           fontSize: '18px',
           color: '#888888',
@@ -273,25 +293,35 @@ export class MenuScene extends Phaser.Scene {
   }
 
   private setupKeyboardInput(): void {
+    const bind = (event: string, callback: () => void): void => {
+      if (!this.input.keyboard) {
+        return;
+      }
+
+      const handler = (): void => callback();
+      this.input.keyboard.on(event, handler);
+      this.keyboardBindings.push({ event, handler });
+    };
+
     // Arrow keys and WASD for navigation
-    this.input.keyboard?.on('keydown-UP', () => this.moveSelection(-1));
-    this.input.keyboard?.on('keydown-DOWN', () => this.moveSelection(1));
-    this.input.keyboard?.on('keydown-W', () => this.moveSelection(-1));
-    this.input.keyboard?.on('keydown-S', () => this.moveSelection(1));
+    bind('keydown-UP', () => this.moveSelection(-1));
+    bind('keydown-DOWN', () => this.moveSelection(1));
+    bind('keydown-W', () => this.moveSelection(-1));
+    bind('keydown-S', () => this.moveSelection(1));
 
     // Enter and Space for confirmation
-    this.input.keyboard?.on('keydown-ENTER', () => this.confirmSelection());
-    this.input.keyboard?.on('keydown-SPACE', () => this.confirmSelection());
+    bind('keydown-ENTER', () => this.confirmSelection());
+    bind('keydown-SPACE', () => this.confirmSelection());
 
     // ESC for back navigation
-    this.input.keyboard?.on('keydown-ESC', () => this.handleBack());
+    bind('keydown-ESC', () => this.handleBack());
 
     // Number key shortcuts
-    this.input.keyboard?.on('keydown-ONE', () => this.selectByNumber(0));
-    this.input.keyboard?.on('keydown-TWO', () => this.selectByNumber(1));
-    this.input.keyboard?.on('keydown-THREE', () => this.selectByNumber(2));
-    this.input.keyboard?.on('keydown-FOUR', () => this.selectByNumber(3));
-    this.input.keyboard?.on('keydown-FIVE', () => this.selectByNumber(4));
+    bind('keydown-ONE', () => this.selectByNumber(0));
+    bind('keydown-TWO', () => this.selectByNumber(1));
+    bind('keydown-THREE', () => this.selectByNumber(2));
+    bind('keydown-FOUR', () => this.selectByNumber(3));
+    bind('keydown-FIVE', () => this.selectByNumber(4));
   }
 
   private moveSelection(delta: number): void {
