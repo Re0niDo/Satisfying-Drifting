@@ -1,10 +1,10 @@
 /** @type {import('ts-jest').JestConfigWithTsJest} */
 module.exports = {
-  preset: 'ts-jest',
   testEnvironment: 'jsdom',
+  extensionsToTreatAsEsm: ['.ts', '.tsx'],
   roots: ['<rootDir>/tests'],
   testMatch: ['**/__tests__/**/*.ts', '**/?(*.)+(spec|test).ts'],
-  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
+  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'cjs', 'mjs', 'json', 'node'],
   collectCoverageFrom: [
     'src/**/*.{ts,tsx}',
     '!src/**/*.d.ts',
@@ -14,10 +14,14 @@ module.exports = {
     '^@/(.*)$': '<rootDir>/src/$1',
     '^phaser3spectorjs$': '<rootDir>/tests/mocks/phaser3spectorjs.ts'
   },
-  setupFilesAfterEnv: ['<rootDir>/tests/setup/jest.setup.ts'],
+  setupFilesAfterEnv: ['./tests/setup/jest.setup.ts'],
   transform: {
-    '^.+\\.ts$': ['ts-jest', {
-      tsconfig: '<rootDir>/tsconfig.test.json'
-    }]
+    '^.+\\.tsx?$': [
+      'ts-jest',
+      {
+        tsconfig: '<rootDir>/tsconfig.test.json',
+        useESM: true
+      }
+    ]
   }
 };

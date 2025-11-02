@@ -4,7 +4,7 @@
  */
 
 import { AssetManager } from '../../src/systems/AssetManager';
-import type { AssetDefinition } from '../../src/types/AssetTypes';
+import type { AssetDefinition, AudioAssetDefinition } from '../../src/types/AssetTypes';
 
 // Mock Phaser objects
 const createMockScene = () => {
@@ -12,6 +12,9 @@ const createMockScene = () => {
     image: jest.fn(),
     audio: jest.fn(),
     on: jest.fn(),
+    once: jest.fn(),
+    off: jest.fn(),
+    start: jest.fn(),
   };
 
   const mockMake = {
@@ -131,6 +134,22 @@ describe('AssetManager', () => {
       expect(mockScene.load.image).toHaveBeenCalledWith('test1', 'test.png');
       expect(mockScene.load.audio).toHaveBeenCalledWith('test2', 'test.mp3');
     });
+
+    it('should preserve codec variants when queuing audio with multiple sources', () => {
+      const audioAsset: AudioAssetDefinition = {
+        key: 'engine-sound',
+        path: 'assets/audio/engine.mp3',
+        format: 'mp3',
+        urls: ['assets/audio/engine.ogg', 'assets/audio/engine.mp3'],
+      };
+
+      assetManager.queueAsset(mockScene, audioAsset);
+
+      expect(mockScene.load.audio).toHaveBeenCalledWith(
+        'engine-sound',
+        ['assets/audio/engine.ogg', 'assets/audio/engine.mp3']
+      );
+    });
   });
 
   describe('Error Handling', () => {
@@ -171,6 +190,23 @@ describe('AssetManager', () => {
       }
 
       expect(mockScene.make.graphics).toHaveBeenCalled();
+    });
+
+    it('should detach loader handlers when unregisterErrorHandlers is called', () => {
+      assetManager.registerErrorHandlers(mockScene);
+
+      const loadErrorHandler = mockScene.load.on.mock.calls.find(
+        (call: any[]) => call[0] === 'loaderror'
+      )?.[1];
+
+      const fileCompleteHandler = mockScene.load.on.mock.calls.find(
+        (call: any[]) => call[0] === 'filecomplete'
+      )?.[1];
+
+      assetManager.unregisterErrorHandlers(mockScene);
+
+      expect(mockScene.load.off).toHaveBeenCalledWith('loaderror', loadErrorHandler);
+      expect(mockScene.load.off).toHaveBeenCalledWith('filecomplete', fileCompleteHandler);
     });
   });
 
@@ -281,6 +317,78 @@ describe('AssetManager', () => {
 
       // Graphics should only be called once
       expect(mockScene.make.graphics).toHaveBeenCalledTimes(1);
+    });
+
+    it('should avoid creating graphics for failed audio assets', () => {
+      assetManager.registerErrorHandlers(mockScene);
+
+      const errorCallback = mockScene.load.on.mock.calls.find(
+        (call: any[]) => call[0] === 'loaderror'
+      )?.[1];
+
+      const initialGraphicsCalls = mockScene.make.graphics.mock.calls.length;
+
+      if (errorCallback) {
+        errorCallback({ key: 'music-loop', url: 'missing.ogg', type: 'audio' });
+      }
+
+      expect(mockScene.make.graphics.mock.calls.length).toBe(initialGraphicsCalls);
+    });
+  });
+
+  describe('loadTrackOnDemand', () => {
+    const trackAsset: AssetDefinition = {
+      key: 'track-01',
+      path: 'assets/tracks/track-01.png',
+      format: 'png',
+    };
+
+    it('should trigger callback immediately when texture already exists', () => {
+      mockScene.textures.exists.mockReturnValue(true);
+      const onComplete = jest.fn();
+
+      AssetManager.loadTrackOnDemand(mockScene, trackAsset, onComplete);
+
+      expect(onComplete).toHaveBeenCalledTimes(1);
+      expect(mockScene.load.image).not.toHaveBeenCalled();
+    });
+
+    it('should queue track loading and start the loader when missing', () => {
+      mockScene.textures.exists.mockReturnValue(false);
+      const onComplete = jest.fn();
+
+      AssetManager.loadTrackOnDemand(mockScene, trackAsset, onComplete);
+
+      expect(mockScene.load.image).toHaveBeenCalledWith('track-01', 'assets/tracks/track-01.png');
+      expect(mockScene.load.start).toHaveBeenCalled();
+
+      const completeCallback = mockScene.load.once.mock.calls.find(
+        (call: any[]) => call[0] === 'complete'
+      )?.[1];
+
+      completeCallback?.();
+
+      expect(onComplete).toHaveBeenCalledTimes(1);
+    });
+
+    it('should create placeholder and invoke callback when track fails to load', () => {
+      mockScene.textures.exists.mockReturnValue(false);
+      const onComplete = jest.fn();
+      const instance = AssetManager.getInstance() as any;
+      const createPlaceholderSpy = jest.spyOn(instance, 'createPlaceholder');
+
+      AssetManager.loadTrackOnDemand(mockScene, trackAsset, onComplete);
+
+      const errorCallback = mockScene.load.once.mock.calls.find(
+        (call: any[]) => call[0] === 'loaderror'
+      )?.[1];
+
+      errorCallback?.({ key: 'track-01' });
+
+      expect(createPlaceholderSpy).toHaveBeenCalledWith(mockScene, 'track-01', 'image');
+      expect(onComplete).toHaveBeenCalledTimes(1);
+
+      createPlaceholderSpy.mockRestore();
     });
   });
 });
