@@ -511,7 +511,6 @@ Implement these tasks in order:
 - [x] Create selection highlight/indicator
 - [x] Implement smooth tween animation for indicator movement
 - [x] Add color changes for selected items
-- [ ] Optional: Add subtle pulse effect on selected item
 - [x] Test feedback is immediate and clear
 
 ### Task 7: Integrate Menu Music
