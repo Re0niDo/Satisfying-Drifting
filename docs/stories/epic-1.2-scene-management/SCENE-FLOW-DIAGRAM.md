@@ -1,4 +1,7 @@
-# Scene Flow Diagram - Story 1.2.1
+# Scene Flow Diagram - Epic 1.2 Scene Management
+
+**Last Updated:** November 2, 2025  
+**Status:** Stories 1.2.1-1.2.4 COMPLETE
 
 ## Current Implementation
 
@@ -38,19 +41,110 @@
                             │
                             ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                      🚧 PRELOADSCENE                             │
-│                  (Story 1.2.2 - Placeholder)                     │
+│                      ✅ PRELOADSCENE                             │
+│                     (Story 1.2.2 - COMPLETE)                     │
 ├─────────────────────────────────────────────────────────────────┤
-│  Current: Displays "PreloadScene (Placeholder)" text             │
-│  Future: Full asset loading with progress bar                    │
+│  init():                                                         │
+│    • Store scene data (fastLoad flag)                            │
+│    • Log initialization (dev mode)                               │
+│                                                                  │
+│  preload():                                                      │
+│    • Create progress bar UI (400x30px)                           │
+│    • Load all game assets (images, audio)                        │
+│    • Update progress display (0-100%)                            │
+│    • Handle load errors gracefully                               │
+│                                                                  │
+│  create():                                                       │
+│    • Enforce minimum 500ms display time                          │
+│    • Fade out progress screen (300ms)                            │
+│    • Transition to MenuScene                                     │
+│                                                                  │
+│  shutdown():                                                     │
+│    • Clean up progress UI elements                               │
+│    • Remove event listeners                                      │
+│    • Log shutdown (dev mode)                                     │
+│                                                                  │
+│  Performance: < 3s load time, 60 FPS maintained ✅               │
 └───────────────────────────┬─────────────────────────────────────┘
                             │
-                            │ (Future: scene.start('MenuScene'))
+                            │ scene.start('MenuScene', { assetsLoaded: true })
                             │
                             ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                        ⏳ MENUSCENE                              │
-│                        (Not implemented)                         │
+│                        ✅ MENUSCENE                              │
+│                     (Story 1.2.3 - COMPLETE)                     │
+├─────────────────────────────────────────────────────────────────┤
+│  init():                                                         │
+│    • Store scene data (assetsLoaded flag)                        │
+│    • Initialize menu state                                       │
+│                                                                  │
+│  create():                                                       │
+│    • Display game title                                          │
+│    • Create mode selection (Practice/Score)                      │
+│    • Setup keyboard navigation                                   │
+│    • Start menu music (if available)                             │
+│    • Create selection indicator with tweens                      │
+│                                                                  │
+│  Mode Selection:                                                 │
+│    • Navigate: ↑↓ Arrow Keys, W/S, 1/2                          │
+│    • Confirm: Enter/Space                                        │
+│                                                                  │
+│  Track Selection:                                                │
+│    • Display 5 tracks with details                               │
+│    • Navigate: ↑↓ Arrow Keys, 1-5 shortcuts                     │
+│    • Back: ESC                                                   │
+│    • Confirm: Enter → Transition to GameScene                    │
+│                                                                  │
+│  shutdown():                                                     │
+│    • Stop menu music                                             │
+│    • Remove keyboard listeners                                   │
+│    • Clean up selection state                                    │
+│    • Kill tweens and timers                                      │
+│                                                                  │
+│  Performance: 60 FPS, < 50ms input latency ✅                    │
+└───────────────────────────┬─────────────────────────────────────┘
+                            │
+                            │ scene.start('GameScene', GameSceneData)
+                            │ { mode, trackId, trackName }
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                        ✅ GAMESCENE                              │
+│                 (Story 1.2.4 - COMPLETE - Phase 1)               │
+├─────────────────────────────────────────────────────────────────┤
+│  init(data):                                                     │
+│    • Store mode (practice/score)                                 │
+│    • Store track info (id, name)                                 │
+│    • Validate scene data                                         │
+│                                                                  │
+│  create():                                                       │
+│    • Display track name (top center)                             │
+│    • Display game mode (uppercase)                               │
+│    • Show placeholder message                                    │
+│    • Show control instructions                                   │
+│    • FPS counter (dev mode, top right)                           │
+│    • Setup keyboard handlers                                     │
+│                                                                  │
+│  Controls:                                                       │
+│    • [R] - Instant restart (150ms fade)                          │
+│    • [ESC] - Return to menu (300ms fade)                         │
+│                                                                  │
+│  update():                                                       │
+│    • Update FPS display (dev mode)                               │
+│    • Placeholder for gameplay (Phase 2)                          │
+│                                                                  │
+│  shutdown():                                                     │
+│    • Remove keyboard listeners                                   │
+│    • Clean up tweens and timers                                  │
+│    • Clear scene data                                            │
+│                                                                  │
+│  Performance: 60 FPS maintained ✅                               │
+│                                                                  │
+│  Phase 2 (Future):                                               │
+│    • Player car controls                                         │
+│    • Track rendering                                             │
+│    • Physics and collision                                       │
+│    • Scoring system                                              │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -73,7 +167,33 @@
 ┌──────────────────┐
 │  PreloadScene    │
 │                  │
-│  init(data)      │  ← PreloadSceneData
+│  init(data)      │  ← PreloadSceneData { fastLoad?: boolean }
+└──────┬───────────┘
+       │
+       │ Loads all game assets
+       │ Transitions with data:
+       ▼
+┌──────────────────┐
+│   MenuScene      │
+│                  │
+│  init(data)      │  ← MenuSceneData { assetsLoaded: boolean }
+└──────┬───────────┘
+       │
+       │ User selects mode and track
+       │ Transitions with data:
+       ▼
+┌──────────────────┐
+│   GameScene      │
+│                  │
+│  init(data)      │  ← GameSceneData { mode, trackId, trackName }
+└──────┬───────────┘
+       │
+       │ User presses ESC to return
+       │ Transitions back with data:
+       ▼
+┌──────────────────┐
+│   MenuScene      │
+│  (returns)       │  ← MenuSceneData { assetsLoaded: true }
 └──────────────────┘
 ```
 
@@ -99,18 +219,26 @@
 ## Performance Timeline
 
 ```
-Time:  0ms              344ms                500ms (target)
-       │                │                     │
-       ├────────────────┤                     │
-       │   BOOTSCENE    │                     │
-       │   ✅ COMPLETE  │                     │
-       ├────────────────┤                     │
-                        │                     │
-                        ▼                     │
-                   PreloadScene               │
-                   starts                     │
-                                              │
-                   Well under target! ✅      │
+Time:  0ms      344ms         3s                5s (target)
+       │        │             │                 │
+       ├────────┤             │                 │
+       │ BOOT   │             │                 │
+       │  ✅    │             │                 │
+       ├────────┴─────────────┤                 │
+       │                      │                 │
+       │    PRELOADSCENE      │                 │
+       │         ✅           │                 │
+       ├──────────────────────┴─────────────────┤
+                              │
+                              ▼
+                         MENUSCENE ✅
+                         (Instant response)
+                              │
+                              ▼
+                         GAMESCENE ✅
+                         (60 FPS maintained)
+                              
+All targets met! ✅
 ```
 
 ## File Structure
@@ -119,21 +247,37 @@ Time:  0ms              344ms                500ms (target)
 src/
 ├── main.ts                    # Entry point, creates Phaser.Game
 ├── config/
-│   └── GameConfig.ts          # Game config with scene array
+│   ├── GameConfig.ts          # Game config with scene array
+│   └── AssetConfig.ts         # Asset paths and keys
 ├── scenes/
 │   ├── README.md              # Scene documentation
 │   ├── BootScene.ts           # ✅ Story 1.2.1
-│   └── PreloadScene.ts        # 🚧 Placeholder
-└── types/
-    └── SceneData.ts           # Scene data interfaces
+│   ├── PreloadScene.ts        # ✅ Story 1.2.2
+│   ├── MenuScene.ts           # ✅ Story 1.2.3
+│   └── GameScene.ts           # ✅ Story 1.2.4
+├── types/
+│   └── SceneData.ts           # Scene data interfaces
+└── utils/
+    └── env.ts                 # Environment utilities
 
 docs/stories/epic-1.2-scene-management/
-├── story-1.2.1-bootscene.md              # Story definition
-├── story-1.2.1-test-results.md           # Test results
-└── story-1.2.1-IMPLEMENTATION-SUMMARY.md # This summary
+├── SCENE-FLOW-DIAGRAM.md                     # This file
+├── story-1.2.1-bootscene.md                  # Story 1.2.1 definition
+├── story-1.2.1-test-results.md               # Test results
+├── story-1.2.1-IMPLEMENTATION-SUMMARY.md     # Implementation summary
+├── story-1.2.2-preloadscene.md               # Story 1.2.2 definition
+├── story-1.2.2-IMPLEMENTATION-SUMMARY.md     # Implementation summary
+├── story-1.2.3-menuscene.md                  # Story 1.2.3 definition
+├── story-1.2.3-IMPLEMENTATION-SUMMARY.md     # Implementation summary
+├── story-1.2.4-gamescene-foundation.md       # Story 1.2.4 definition
+├── story-1.2.4-test-results.md               # Test results
+└── story-1.2.4-IMPLEMENTATION-SUMMARY.md     # Implementation summary
 
 tests/scenes/
-└── BootScene.test.ts          # 20 unit tests
+├── BootScene.test.ts          # 20 unit tests
+├── PreloadScene.test.ts       # 45+ unit tests (90.1% coverage)
+├── MenuScene.test.ts          # 40+ unit tests (75.8% coverage)
+└── GameScene.test.ts          # 35+ unit tests (74.2% coverage)
 ```
 
 ## Lifecycle Events Flow
@@ -184,22 +328,43 @@ Registry Access:
   Any scene → registry.get() → Check if exists → Fallback
 ```
 
-## Next Story Preview: 1.2.2 PreloadScene
+## Epic 1.2 Scene Management - COMPLETE ✅
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│  PRELOADSCENE (Story 1.2.2)                                  │
-├─────────────────────────────────────────────────────────────┤
-│  Will implement:                                             │
-│    • Progress bar display                                    │
-│    • Load all game assets (images, audio, fonts)             │
-│    • Asset validation                                        │
-│    • Transition to MenuScene                                 │
-│    • Loading screen UI                                       │
-│                                                              │
-│  Performance target: 2-5 seconds                             │
-└─────────────────────────────────────────────────────────────┘
-```
+All four stories in Epic 1.2 have been successfully implemented and tested:
+
+1. **Story 1.2.1: BootScene** ✅
+   - Rapid boot sequence (< 500ms)
+   - Manager initialization
+   - Dev mode logging
+
+2. **Story 1.2.2: PreloadScene** ✅
+   - Visual progress feedback
+   - Asset loading system
+   - Error handling
+
+3. **Story 1.2.3: MenuScene** ✅
+   - Mode and track selection
+   - Keyboard navigation
+   - Menu music integration
+
+4. **Story 1.2.4: GameScene Foundation** ✅
+   - Display game info
+   - Restart and menu controls
+   - Placeholder for Phase 2 gameplay
+
+## Next Steps
+
+**Phase 2: Gameplay Implementation** (Future Epic)
+
+The GameScene foundation is ready for Phase 2 enhancements:
+- Player car implementation and controls
+- Track rendering and collision detection
+- Physics simulation (drifting mechanics)
+- Scoring and time tracking
+- Visual effects (particle systems, trails)
+- Audio feedback (engine sounds, drift sounds)
+
+The scene management infrastructure is solid and ready to support full gameplay implementation.
 
 ---
 

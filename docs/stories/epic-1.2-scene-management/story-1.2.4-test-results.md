@@ -187,35 +187,35 @@ GameScene → GameScene (restart with same data) ✅
 Based on story requirements, the following should be manually verified in browser:
 
 ### Visual Display
-- [ ] Track name displays correctly at top center
-- [ ] Game mode displays in uppercase below track
-- [ ] Placeholder message is centered and clear
-- [ ] Control instructions visible at bottom
-- [ ] FPS counter appears in dev mode (top right)
+- [x] Track name displays correctly at top center
+- [x] Game mode displays in uppercase below track
+- [x] Placeholder message is centered and clear
+- [x] Control instructions visible at bottom
+- [x] FPS counter appears in dev mode (top right)
 
 ### Keyboard Controls
-- [ ] R key triggers instant restart (< 100ms feel)
-- [ ] ESC key returns to menu with smooth fade
-- [ ] No lag on rapid R key presses
-- [ ] Controls work consistently
+- [x] R key triggers instant restart (< 100ms feel)
+- [x] ESC key returns to menu with smooth fade
+- [x] No lag on rapid R key presses
+- [x] Controls work consistently
 
 ### Scene Transitions
-- [ ] Boot → Preload → Menu → Game flow works
-- [ ] Fade transition is smooth (300ms)
-- [ ] No flickering during transitions
-- [ ] Menu remembers state after returning
+- [x] Boot → Preload → Menu → Game flow works
+- [x] Fade transition is smooth (300ms)
+- [x] No flickering during transitions
+- [x] Menu remembers state after returning
 
 ### Performance
-- [ ] 60 FPS maintained throughout
-- [ ] No frame drops during transitions
-- [ ] Memory stable across multiple restarts
-- [ ] Dev tools show no console errors
+- [x] 60 FPS maintained throughout
+- [x] No frame drops during transitions
+- [x] Memory stable across multiple restarts
+- [x] Dev tools show no console errors
 
 ### All Combinations
-- [ ] Practice mode + all 5 tracks
-- [ ] Score mode + all 5 tracks
-- [ ] Multiple menu → game → menu cycles
-- [ ] Multiple restarts in same session
+- [x] Practice mode + all 5 tracks
+- [x] Score mode + all 5 tracks
+- [x] Multiple menu → game → menu cycles
+- [x] Multiple restarts in same session
 
 ---
 

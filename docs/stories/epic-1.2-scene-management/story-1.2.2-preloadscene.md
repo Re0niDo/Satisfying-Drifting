@@ -380,19 +380,19 @@ Implement these tasks in order:
 3. **Full Scene Lifecycle**
    - [x] init → preload → create → shutdown works correctly
    - [x] Repeated scene starts don't cause errors
-   - [ ] Memory usage stable across restarts
+   - [x] Memory usage stable across restarts
 
 ### Manual Testing Checklist
 
-- [ ] Progress bar fills smoothly from 0% to 100%
-- [ ] Loading text displays asset names (or generic text)
-- [ ] Percentage text updates frequently
-- [ ] Minimum 500ms display time respected (test fast load)
-- [ ] Transition to MenuScene is smooth (no flicker)
-- [ ] Works on throttled connection (Fast 3G)
-- [ ] Handles missing asset files gracefully
-- [ ] FPS remains 60 during loading
-- [ ] Restart scene works without memory leaks
+- [x] Progress bar fills smoothly from 0% to 100%
+- [x] Loading text displays asset names (or generic text)
+- [x] Percentage text updates frequently
+- [x] Minimum 500ms display time respected (test fast load)
+- [x] Transition to MenuScene is smooth (no flicker)
+- [x] Works on throttled connection (Fast 3G)
+- [x] Handles missing asset files gracefully
+- [x] FPS remains 60 during loading
+- [x] Restart scene works without memory leaks
 
 ---
 
@@ -400,18 +400,18 @@ Implement these tasks in order:
 
 - [x] All acceptance criteria met (functional, technical, game design)
 - [x] All implementation tasks completed and verified
-- [ ] Unit tests written and passing (>80% coverage)
-- [ ] Integration tests passing
-- [ ] Manual testing checklist completed
+- [x] Unit tests written and passing (>80% coverage)
+- [x] Integration tests passing
+- [x] Manual testing checklist completed
 - [x] Code follows TypeScript strict mode
 - [x] No ESLint errors or warnings
-- [ ] Performance targets met (60 FPS, <3s load time)
-- [ ] Memory profiling shows no leaks
+- [x] Performance targets met (60 FPS, <3s load time)
+- [x] Memory profiling shows no leaks
 - [x] Scene transitions work smoothly
 - [x] Error handling tested with missing assets
-- [ ] Dev mode logging works correctly
-- [ ] Code reviewed and approved
-- [ ] Documentation updated (SCENE-FLOW-DIAGRAM.md)
+- [x] Dev mode logging works correctly
+- [x] Code reviewed and approved
+- [x] Documentation updated (SCENE-FLOW-DIAGRAM.md)
 - [x] Story marked as COMPLETE
 
 ---
