@@ -7,6 +7,7 @@
  * Data passed to the BootScene.
  * BootScene is the first scene and typically doesn't receive data.
  */
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface BootSceneData {
   // BootScene is the entry point - no data expected
 }

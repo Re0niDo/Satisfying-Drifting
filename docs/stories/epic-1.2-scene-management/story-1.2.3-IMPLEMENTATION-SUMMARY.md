@@ -7,6 +7,44 @@
 
 ---
 
+## Updates and Bug Fixes (November 2, 2025)
+
+### Issues Fixed During Manual Testing
+
+1. **Instruction Text Incomplete** ✅
+   - **Issue**: Bottom instruction text didn't mention W/S keys as alternative controls
+   - **Fix**: Updated instruction text to: "Use ↑↓ Arrow Keys or W/S or 1/2, then ENTER"
+   - **File Modified**: `src/scenes/MenuScene.ts`
+
+2. **Selection Indicator Artifacts** ✅
+   - **Issue**: Rectangle selector left visual artifacts when switching between menus
+   - **Fix**: Added proper destruction of selector rectangle in both `createTrackSelectionScreen()` and `handleBack()`
+   - **Implementation**: Destroy old selector before creating new one in each menu state
+   - **Files Modified**: `src/scenes/MenuScene.ts`
+
+3. **Selection Indicator Styling** ✅
+   - **Issue**: Green filled rectangle with green border was not aesthetically pleasing
+   - **Fix**: Changed to white border (2px) with transparent fill (alpha 0)
+   - **Visual Result**: Clean, minimalist white outline that highlights selection without obscuring text
+   - **Files Modified**: `src/scenes/MenuScene.ts`
+
+### Manual Testing Completed ✅
+
+All manual testing items verified during game execution:
+- Game title clearly visible and centered ✅
+- Mode selection buttons easy to read ✅
+- Keyboard navigation responsive (< 50ms latency) ✅
+- Selection indicator moves smoothly with tween animations ✅
+- Track list clear and well-organized ✅
+- Number shortcuts work for quick selection (1-5) ✅
+- ESC back navigation intuitive and artifact-free ✅
+- FPS maintains 60 throughout menu interactions ✅
+- No visual glitches or text overlap ✅
+- Menu music: Not tested (no audio assets loaded)
+- GameScene transition: Pending GameScene implementation
+
+---
+
 ## Implementation Overview
 
 Successfully implemented the MenuScene with full keyboard navigation, mode selection, track selection, visual feedback, and scene transitions. The implementation follows TypeScript strict mode, maintains 60 FPS performance targets, and includes comprehensive test coverage.

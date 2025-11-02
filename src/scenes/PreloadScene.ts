@@ -218,7 +218,7 @@ export class PreloadScene extends Phaser.Scene {
 
     // Clear and redraw progress bar
     this.progressBar.clear();
-    this.progressBar.fillStyle(0x00ff00, 1);
+    this.progressBar.fillStyle(0xffffff, 1);
     this.progressBar.fillRect(
       barX + fillPadding,
       barY + fillPadding,

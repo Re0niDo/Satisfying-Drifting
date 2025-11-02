@@ -287,7 +287,7 @@ describe('PreloadScene', () => {
       mockLoad._triggerEvent('progress', 0.5);
 
       expect(mockProgressBar.clear).toHaveBeenCalled();
-      expect(mockProgressBar.fillStyle).toHaveBeenCalledWith(0x00ff00, 1);
+      expect(mockProgressBar.fillStyle).toHaveBeenCalledWith(0xffffff, 1);
       expect(mockProgressBar.fillRect).toHaveBeenCalled();
     });
 

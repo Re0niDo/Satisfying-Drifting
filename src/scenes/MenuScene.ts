@@ -172,24 +172,24 @@ export class MenuScene extends Phaser.Scene {
       return text;
     });
 
-    // Create selection indicator
+    // Create selection indicator with white border and no fill
     const firstButtonY = startY;
     this.selectionIndicator = this.add.rectangle(
       width / 2,
       firstButtonY,
       300,
       buttonHeight,
-      0x00ff00,
-      0.3
+      0x000000,
+      0
     );
-    this.selectionIndicator.setStrokeStyle(2, 0x00ff00);
+    this.selectionIndicator.setStrokeStyle(2, 0xffffff);
 
     // Instructions
     this.instructionText = this.add
       .text(
         width / 2,
         500,
-        'Use ↑↓ Arrow Keys or 1/2, then ENTER',
+        'Use ↑↓ Arrow Keys, or W/S, or 1/2, then ENTER',
         {
           fontSize: '18px',
           color: '#888888',
@@ -204,6 +204,7 @@ export class MenuScene extends Phaser.Scene {
     this.titleText?.destroy();
     this.modeTexts.forEach((text) => text.destroy());
     this.instructionText?.destroy();
+    this.selectionIndicator?.destroy();
     this.modeTexts = [];
 
     // Track Selection Title
@@ -241,12 +242,17 @@ export class MenuScene extends Phaser.Scene {
       return text;
     });
 
-    // Update selection indicator position
-    if (this.selectionIndicator) {
-      const firstTrackY = startY;
-      this.selectionIndicator.setPosition(width / 2, firstTrackY);
-      this.selectionIndicator.setSize(600, itemHeight);
-    }
+    // Create selection indicator for track selection with white border and no fill
+    const firstTrackY = startY;
+    this.selectionIndicator = this.add.rectangle(
+      width / 2,
+      firstTrackY,
+      600,
+      itemHeight,
+      0x000000,
+      0
+    );
+    this.selectionIndicator.setStrokeStyle(2, 0xffffff);
 
     // Back instruction
     this.instructionText = this.add
@@ -361,6 +367,7 @@ export class MenuScene extends Phaser.Scene {
       this.titleText?.destroy();
       this.trackTexts.forEach((text) => text.destroy());
       this.instructionText?.destroy();
+      this.selectionIndicator?.destroy();
       this.trackTexts = [];
 
       // Recreate mode selection screen
