@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import type { PreloadSceneData, MenuSceneData } from '../types/SceneData';
-import { AssetKeys, AssetPaths } from '../config/AssetConfig';
+import { ImageAssets, TrackAssets, UIAssets, AudioAssets } from '../config/AssetConfig';
+import { AssetManager } from '../systems/AssetManager';
 import { isDevEnvironment } from '../utils/env';
 
 /**
@@ -147,6 +148,7 @@ export class PreloadScene extends Phaser.Scene {
     });
 
     // Error event - fires if asset fails to load
+    // Note: AssetManager also handles errors and creates placeholders
     this.load.on('loaderror', (file: Phaser.Loader.File) => {
       if (isDevEnvironment()) {
         console.error(`[PreloadScene] Failed to load: ${file.key}`);
@@ -155,57 +157,51 @@ export class PreloadScene extends Phaser.Scene {
   }
 
   private loadAssets(): void {
-    // Load all images - sprites
-    this.load.image(AssetKeys.CAR, AssetPaths[AssetKeys.CAR]);
-    this.load.image(AssetKeys.PARTICLE, AssetPaths[AssetKeys.PARTICLE]);
+    // Get AssetManager instance
+    const assetManager = AssetManager.getInstance();
+    
+    // Register error handlers for placeholder generation
+    assetManager.registerErrorHandlers(this);
+    
+    // Queue all image assets (sprites)
+    assetManager.queueAssets(this, [
+      ImageAssets.CAR_SPRITE,
+      ImageAssets.PARTICLE_SMOKE,
+      ImageAssets.PARTICLE_SPARKLE
+    ]);
 
-    // Load all images - tracks
-    this.load.image(
-      AssetKeys.TRACK_TUTORIAL,
-      AssetPaths[AssetKeys.TRACK_TUTORIAL]
-    );
-    this.load.image(
-      AssetKeys.TRACK_SERPENTINE,
-      AssetPaths[AssetKeys.TRACK_SERPENTINE]
-    );
-    this.load.image(
-      AssetKeys.TRACK_HAIRPIN,
-      AssetPaths[AssetKeys.TRACK_HAIRPIN]
-    );
-    this.load.image(
-      AssetKeys.TRACK_GAUNTLET,
-      AssetPaths[AssetKeys.TRACK_GAUNTLET]
-    );
-    this.load.image(
-      AssetKeys.TRACK_SANDBOX,
-      AssetPaths[AssetKeys.TRACK_SANDBOX]
-    );
+    // Queue all track images
+    assetManager.queueAssets(this, [
+      TrackAssets.TRACK_TUTORIAL,
+      TrackAssets.TRACK_SERPENTINE,
+      TrackAssets.TRACK_HAIRPIN,
+      TrackAssets.TRACK_GAUNTLET,
+      TrackAssets.TRACK_SANDBOX
+    ]);
 
-    // Load all images - UI
-    this.load.image(AssetKeys.BUTTON, AssetPaths[AssetKeys.BUTTON]);
-    this.load.image(AssetKeys.METER_BAR, AssetPaths[AssetKeys.METER_BAR]);
+    // Queue all UI assets
+    assetManager.queueAssets(this, [
+      UIAssets.BUTTON,
+      UIAssets.METER_BAR
+    ]);
 
-    // Load all audio - SFX
-    this.load.audio(
-      AssetKeys.SFX_TIRE_SCREECH,
-      AssetPaths[AssetKeys.SFX_TIRE_SCREECH]
-    );
-    this.load.audio(AssetKeys.SFX_ENGINE, AssetPaths[AssetKeys.SFX_ENGINE]);
-    this.load.audio(
-      AssetKeys.SFX_UI_CLICK,
-      AssetPaths[AssetKeys.SFX_UI_CLICK]
-    );
-    this.load.audio(
-      AssetKeys.SFX_PERFECT_DRIFT,
-      AssetPaths[AssetKeys.SFX_PERFECT_DRIFT]
-    );
+    // Queue all audio - SFX
+    assetManager.queueAssets(this, [
+      AudioAssets.sfx.TIRE_SCREECH,
+      AudioAssets.sfx.ENGINE,
+      AudioAssets.sfx.UI_CLICK,
+      AudioAssets.sfx.PERFECT_DRIFT
+    ]);
 
-    // Load all audio - Music
-    this.load.audio(AssetKeys.MUSIC_MENU, AssetPaths[AssetKeys.MUSIC_MENU]);
-    this.load.audio(
-      AssetKeys.MUSIC_GAMEPLAY,
-      AssetPaths[AssetKeys.MUSIC_GAMEPLAY]
-    );
+    // Queue all audio - Music
+    assetManager.queueAssets(this, [
+      AudioAssets.music.MENU,
+      AudioAssets.music.GAMEPLAY
+    ]);
+
+    if (isDevEnvironment()) {
+      console.log('[PreloadScene] All assets queued via AssetManager');
+    }
   }
 
   private updateProgressBar(progress: number): void {

@@ -4,7 +4,7 @@ import type {
   GameSceneData,
   TrackInfo,
 } from '../types/SceneData';
-import { AssetKeys } from '../config/AssetConfig';
+import { AudioAssets } from '../config/AssetConfig';
 import { isDevEnvironment } from '../utils/env';
 
 /**
@@ -90,8 +90,8 @@ export class MenuScene extends Phaser.Scene {
     const { width } = this.cameras.main;
 
     // Start menu music if available
-    if (this.cache.audio.exists(AssetKeys.MUSIC_MENU)) {
-      this.menuMusic = this.sound.add(AssetKeys.MUSIC_MENU, {
+    if (this.cache.audio.exists(AudioAssets.music.MENU.key)) {
+      this.menuMusic = this.sound.add(AudioAssets.music.MENU.key, {
         volume: 0.5,
         loop: true,
       });

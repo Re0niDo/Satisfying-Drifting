@@ -1,75 +1,154 @@
 /**
  * Centralized asset key constants and path mappings.
  * All asset loading should reference these constants instead of hardcoded strings.
+ * 
+ * This configuration uses structured AssetDefinition objects for type-safe asset management.
+ * Each asset has a unique key and path, with optional format specifiers.
+ * 
+ * Expected formats:
+ * - Images: PNG format, various sizes (sprites: 32x32, tracks: 1280x720)
+ * - Audio: MP3 format (OGG preferred for web, MP3 as fallback)
+ * - UI Elements: PNG format with transparency
  */
 
-export const AssetKeys = {
-    // Sprites
-    CAR: 'car',
-    PARTICLE: 'particle',
-    
-    // Tracks
-    TRACK_TUTORIAL: 'track_tutorial',
-    TRACK_SERPENTINE: 'track_serpentine',
-    TRACK_HAIRPIN: 'track_hairpin',
-    TRACK_GAUNTLET: 'track_gauntlet',
-    TRACK_SANDBOX: 'track_sandbox',
-    
-    // UI Elements
-    BUTTON: 'button',
-    METER_BAR: 'meter_bar',
-    
-    // Audio - SFX
-    SFX_TIRE_SCREECH: 'sfx_tire_screech',
-    SFX_ENGINE: 'sfx_engine',
-    SFX_UI_CLICK: 'sfx_ui_click',
-    SFX_PERFECT_DRIFT: 'sfx_perfect_drift',
-    
-    // Audio - Music
-    MUSIC_MENU: 'music_menu',
-    MUSIC_GAMEPLAY: 'music_gameplay'
-} as const;
-
-export const AssetPaths = {
-    // Sprites
-    [AssetKeys.CAR]: 'assets/images/sprites/car-placeholder.png',
-    [AssetKeys.PARTICLE]: 'assets/images/sprites/particle-placeholder.png',
-    
-    // Tracks
-    [AssetKeys.TRACK_TUTORIAL]: 'assets/images/tracks/track-placeholder.png',
-    [AssetKeys.TRACK_SERPENTINE]: 'assets/images/tracks/track-placeholder.png',
-    [AssetKeys.TRACK_HAIRPIN]: 'assets/images/tracks/track-placeholder.png',
-    [AssetKeys.TRACK_GAUNTLET]: 'assets/images/tracks/track-placeholder.png',
-    [AssetKeys.TRACK_SANDBOX]: 'assets/images/tracks/track-placeholder.png',
-    
-    // UI Elements
-    [AssetKeys.BUTTON]: 'assets/images/ui/button-placeholder.png',
-    [AssetKeys.METER_BAR]: 'assets/images/ui/meter-bar-placeholder.png',
-    
-    // Audio - SFX
-    [AssetKeys.SFX_TIRE_SCREECH]: 'assets/audio/sfx/tire-screech-placeholder.mp3',
-    [AssetKeys.SFX_ENGINE]: 'assets/audio/sfx/engine-placeholder.mp3',
-    [AssetKeys.SFX_UI_CLICK]: 'assets/audio/sfx/ui-click-placeholder.mp3',
-    [AssetKeys.SFX_PERFECT_DRIFT]: 'assets/audio/sfx/perfect-drift-placeholder.mp3',
-    
-    // Audio - Music
-    [AssetKeys.MUSIC_MENU]: 'assets/audio/music/bgm-placeholder.mp3',
-    [AssetKeys.MUSIC_GAMEPLAY]: 'assets/audio/music/bgm-placeholder.mp3'
+/**
+ * Image assets (sprites, particles, UI elements)
+ * Placeholder: Colored rectangles if missing (magenta for sprites)
+ */
+export const ImageAssets = {
+    CAR_SPRITE: { 
+        key: 'car-sprite', 
+        path: 'assets/images/sprites/car.png',
+        format: 'png'
+    },
+    PARTICLE_SMOKE: { 
+        key: 'particle-smoke', 
+        path: 'assets/images/sprites/smoke.png',
+        format: 'png'
+    },
+    PARTICLE_SPARKLE: { 
+        key: 'particle-sparkle', 
+        path: 'assets/images/sprites/sparkle.png',
+        format: 'png'
+    }
 } as const;
 
 /**
- * Asset type enumeration for type-safe asset loading
+ * Track background images (1280x720 recommended)
+ * Placeholder: Gray rectangle with track name text
  */
-export enum AssetType {
-    IMAGE = 'image',
-    AUDIO = 'audio',
-    SPRITESHEET = 'spritesheet',
-    JSON = 'json'
-}
+export const TrackAssets = {
+    TRACK_TUTORIAL: { 
+        key: 'track-tutorial', 
+        path: 'assets/images/tracks/tutorial.png',
+        format: 'png'
+    },
+    TRACK_SERPENTINE: { 
+        key: 'track-serpentine', 
+        path: 'assets/images/tracks/serpentine.png',
+        format: 'png'
+    },
+    TRACK_HAIRPIN: { 
+        key: 'track-hairpin', 
+        path: 'assets/images/tracks/hairpin.png',
+        format: 'png'
+    },
+    TRACK_GAUNTLET: { 
+        key: 'track-gauntlet', 
+        path: 'assets/images/tracks/gauntlet.png',
+        format: 'png'
+    },
+    TRACK_SANDBOX: { 
+        key: 'track-sandbox', 
+        path: 'assets/images/tracks/sandbox.png',
+        format: 'png'
+    }
+} as const;
 
 /**
- * Helper function to get asset path by key
+ * UI element assets (buttons, meters, icons)
+ * Placeholder: Colored rectangles with appropriate dimensions
  */
-export function getAssetPath(key: string): string {
-    return AssetPaths[key as keyof typeof AssetPaths] || '';
-}
+export const UIAssets = {
+    BUTTON: { 
+        key: 'ui-button', 
+        path: 'assets/images/ui/button.png',
+        format: 'png'
+    },
+    METER_BAR: { 
+        key: 'ui-meter-bar', 
+        path: 'assets/images/ui/meter-bar.png',
+        format: 'png'
+    }
+} as const;
+
+/**
+ * Audio assets (music and sound effects)
+ * Placeholder: Silent audio (no sound played)
+ */
+export const AudioAssets = {
+    music: {
+        MENU: { 
+            key: 'music-menu', 
+            path: 'assets/audio/music/menu.mp3',
+            format: 'mp3'
+        },
+        GAMEPLAY: { 
+            key: 'music-gameplay', 
+            path: 'assets/audio/music/gameplay.mp3',
+            format: 'mp3'
+        }
+    },
+    sfx: {
+        TIRE_SCREECH: { 
+            key: 'sfx-tire-screech', 
+            path: 'assets/audio/sfx/tire-screech.mp3',
+            format: 'mp3'
+        },
+        ENGINE: { 
+            key: 'sfx-engine', 
+            path: 'assets/audio/sfx/engine.mp3',
+            format: 'mp3'
+        },
+        UI_CLICK: { 
+            key: 'sfx-ui-click', 
+            path: 'assets/audio/sfx/ui-click.mp3',
+            format: 'mp3'
+        },
+        PERFECT_DRIFT: { 
+            key: 'sfx-perfect-drift', 
+            path: 'assets/audio/sfx/perfect-drift.mp3',
+            format: 'mp3'
+        }
+    }
+} as const;
+
+/**
+ * Type helper: Extract image asset keys
+ */
+export type ImageAssetKey = typeof ImageAssets[keyof typeof ImageAssets]['key'];
+
+/**
+ * Type helper: Extract track asset keys
+ */
+export type TrackAssetKey = typeof TrackAssets[keyof typeof TrackAssets]['key'];
+
+/**
+ * Type helper: Extract UI asset keys
+ */
+export type UIAssetKey = typeof UIAssets[keyof typeof UIAssets]['key'];
+
+/**
+ * Type helper: Extract audio asset keys (music)
+ */
+export type MusicAssetKey = typeof AudioAssets.music[keyof typeof AudioAssets.music]['key'];
+
+/**
+ * Type helper: Extract audio asset keys (SFX)
+ */
+export type SFXAssetKey = typeof AudioAssets.sfx[keyof typeof AudioAssets.sfx]['key'];
+
+/**
+ * Type helper: All audio asset keys
+ */
+export type AudioAssetKey = MusicAssetKey | SFXAssetKey;

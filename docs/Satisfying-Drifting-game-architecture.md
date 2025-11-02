@@ -842,6 +842,11 @@ dataProcessor.addToUpdateList(); // Ensure it's in update list if needed
 - `tests/utils/MathHelpers.test.ts` - Vector math utilities
 - `tests/performance/FrameRate.test.ts` - Performance regression tests
 
+**Regression Guardrails (November 2, 2025 update):**
+- **Silence expected AssetManager warnings:** Wrap console output in `jest.spyOn(console, 'warn'|'log').mockImplementation(() => {})` inside error-handling specs, then assert the exact warning strings so signal is preserved without polluting CI logs.
+- **Supply realistic loader metadata in tests:** When firing `loaderror` events, provide `{ key, url, type }` so placeholder logic receives the same shape as Phaser runtime events, preventing `undefined` path/type regressions.
+- **Stub `scene.make.graphics` in scene harnesses:** Ensure PreloadScene tests inject a graphics factory mock (with `generateTexture`/`destroy`) before triggering AssetManager placeholders; this mirrors Phaser's LoaderPlugin contract and avoids TypeErrors during asset failure scenarios.
+
 **Testing Philosophy:**
 - **Test business logic, not Phaser rendering**: Focus on drift calculations, not sprite positions
 - **Mock heavy dependencies**: Don't load actual Phaser scenes in unit tests

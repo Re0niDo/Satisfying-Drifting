@@ -7,7 +7,7 @@ jest.mock('phaser');
 import Phaser from 'phaser';
 import { MenuScene } from '../../src/scenes/MenuScene';
 import type { MenuSceneData, GameSceneData } from '../../src/types/SceneData';
-import { AssetKeys } from '../../src/config/AssetConfig';
+import { AudioAssets } from '../../src/config/AssetConfig';
 
 const originalImportMetaEnv = (globalThis as any).__VITE_IMPORT_META_ENV__;
 
@@ -129,7 +129,7 @@ describe('MenuScene', () => {
       scene.create();
 
       expect(scene.sound.add).toHaveBeenCalledWith(
-        AssetKeys.MUSIC_MENU,
+        AudioAssets.music.MENU.key,
         expect.objectContaining({
           volume: 0.5,
           loop: true,
