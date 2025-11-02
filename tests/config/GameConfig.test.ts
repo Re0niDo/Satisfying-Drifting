@@ -4,6 +4,7 @@ jest.mock('phaser', () => {
         __esModule: true,
         default: {
             AUTO: 0,
+            Scene: class {},
             Scale: {
                 FIT: 1,
                 CENTER_BOTH: 1,
@@ -52,10 +53,10 @@ describe('GameConfig', () => {
         }
     });
 
-    it('should have an empty scene array (scenes added in story 1.2)', () => {
+    it('should register Boot, Preload, and Menu scenes', () => {
         expect(gameConfig.scene).toBeDefined();
         expect(Array.isArray(gameConfig.scene)).toBe(true);
-        expect(gameConfig.scene).toHaveLength(0);
+        expect(gameConfig.scene).toHaveLength(3);
     });
 
     it('should have the correct parent container', () => {

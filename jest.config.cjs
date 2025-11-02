@@ -11,14 +11,13 @@ module.exports = {
     '!src/main.ts'
   ],
   moduleNameMapper: {
-    '^@/(.*)$': '<rootDir>/src/$1'
+    '^@/(.*)$': '<rootDir>/src/$1',
+    '^phaser3spectorjs$': '<rootDir>/tests/mocks/phaser3spectorjs.ts'
   },
+  setupFilesAfterEnv: ['<rootDir>/tests/setup/jest.setup.ts'],
   transform: {
     '^.+\\.ts$': ['ts-jest', {
-      tsconfig: {
-        esModuleInterop: true,
-        allowSyntheticDefaultImports: true
-      }
+      tsconfig: '<rootDir>/tsconfig.test.json'
     }]
   }
 };

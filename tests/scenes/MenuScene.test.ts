@@ -2,40 +2,32 @@
  * @jest-environment jsdom
  */
 
+jest.mock('phaser');
+
 import Phaser from 'phaser';
 import { MenuScene } from '../../src/scenes/MenuScene';
 import type { MenuSceneData, GameSceneData } from '../../src/types/SceneData';
 import { AssetKeys } from '../../src/config/AssetConfig';
 
-// Mock environment variable
-Object.defineProperty(import.meta, 'env', {
-  value: { DEV: false },
-  writable: true,
+const originalImportMetaEnv = (globalThis as any).__VITE_IMPORT_META_ENV__;
+
+beforeAll(() => {
+  (globalThis as any).__VITE_IMPORT_META_ENV__ = { DEV: false };
+});
+
+afterAll(() => {
+  (globalThis as any).__VITE_IMPORT_META_ENV__ = originalImportMetaEnv;
 });
 
 describe('MenuScene', () => {
   let scene: MenuScene;
-  let game: Phaser.Game;
 
   beforeEach(() => {
-    // Create a minimal game instance for testing
-    game = new Phaser.Game({
-      type: Phaser.HEADLESS,
-      width: 1280,
-      height: 720,
-      scene: MenuScene,
-      audio: {
-        noAudio: true,
-      },
-    });
-
-    scene = game.scene.getScene('MenuScene') as MenuScene;
+    scene = new MenuScene();
   });
 
   afterEach(() => {
-    if (game) {
-      game.destroy(true, false);
-    }
+    jest.clearAllMocks();
   });
 
   describe('Scene Initialization', () => {
@@ -174,53 +166,39 @@ describe('MenuScene', () => {
   });
 
   describe('Scene Transition', () => {
-    it('should prepare GameSceneData with correct structure', (done) => {
+    it('should prepare GameSceneData with correct structure', () => {
       scene.init({ assetsLoaded: true });
       scene.create();
 
-      // Mock scene.start to capture the data
       const startSpy = jest.spyOn(scene.scene, 'start');
 
-      // Mock camera fade
       jest.spyOn(scene.cameras.main, 'fadeOut').mockImplementation(() => {
-        // Immediately trigger the callback
-        scene.cameras.main.emit('camerafadeoutcomplete');
         return scene.cameras.main;
       });
 
-      // Simulate selecting practice mode and first track
-      // This would normally be done through keyboard input
-      // For testing, we'll manually trigger the private methods via reflection
       (scene as any).selectedMode = 'practice';
       (scene as any).currentSelection = 0;
       (scene as any).menuState = 'TRACK_SELECTION';
 
-      // Get the track data
-      const TRACKS = [
-        {
-          id: 'tutorial',
-          name: 'Tutorial Circuit',
-          difficulty: 'Easy',
-          description: 'Learn the basics',
-          optimalTime: 30,
-        },
-      ];
+      const selectedTrack = {
+        id: 'tutorial',
+        name: 'Tutorial Circuit',
+        difficulty: 'Easy' as const,
+        description: 'Learn the basics',
+        optimalTime: 30,
+      };
 
-      // Call startGame
-      (scene as any).startGame(TRACKS[0]);
+      (scene as any).startGame(selectedTrack);
 
-      // Wait for async operations
-      setTimeout(() => {
-        expect(startSpy).toHaveBeenCalledWith(
-          'GameScene',
-          expect.objectContaining({
-            mode: 'practice',
-            trackId: 'tutorial',
-            trackName: 'Tutorial Circuit',
-          })
-        );
-        done();
-      }, 100);
+      scene.cameras.main.emit('camerafadeoutcomplete');
+
+      const expectedData: GameSceneData = {
+        mode: 'practice',
+        trackId: 'tutorial',
+        trackName: 'Tutorial Circuit',
+      };
+
+      expect(startSpy).toHaveBeenCalledWith('GameScene', expectedData);
     });
 
     it('should trigger camera fade effect before transition', () => {

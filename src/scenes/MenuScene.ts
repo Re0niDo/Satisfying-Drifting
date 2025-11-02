@@ -5,6 +5,7 @@ import type {
   TrackInfo,
 } from '../types/SceneData';
 import { AssetKeys } from '../config/AssetConfig';
+import { isDevEnvironment } from '../utils/env';
 
 /**
  * MenuScene - Main menu for game mode and track selection
@@ -80,7 +81,7 @@ export class MenuScene extends Phaser.Scene {
     this.currentSelection = 0;
     this.selectedMode = undefined;
 
-    if (import.meta.env.DEV) {
+    if (isDevEnvironment()) {
       console.log('[MenuScene] Initialized', this.sceneData);
     }
   }
@@ -96,7 +97,7 @@ export class MenuScene extends Phaser.Scene {
       });
       this.menuMusic.play();
 
-      if (import.meta.env.DEV) {
+      if (isDevEnvironment()) {
         console.log('[MenuScene] Menu music started');
       }
     }
@@ -107,7 +108,7 @@ export class MenuScene extends Phaser.Scene {
     // Set up keyboard input
     this.setupKeyboardInput();
 
-    if (import.meta.env.DEV) {
+    if (isDevEnvironment()) {
       console.log('[MenuScene] Created - Mode Selection');
     }
   }
@@ -131,7 +132,7 @@ export class MenuScene extends Phaser.Scene {
     this.currentSelection = 0;
     this.menuState = 'MODE_SELECTION';
 
-    if (import.meta.env.DEV) {
+    if (isDevEnvironment()) {
       console.log('[MenuScene] Shutdown complete');
     }
   }
@@ -293,7 +294,7 @@ export class MenuScene extends Phaser.Scene {
     // Update visual indicator
     this.updateSelectionIndicator();
 
-    if (import.meta.env.DEV) {
+    if (isDevEnvironment()) {
       console.log(
         `[MenuScene] Selection moved to: ${this.currentSelection}`
       );
@@ -325,7 +326,7 @@ export class MenuScene extends Phaser.Scene {
       // Store selected mode
       this.selectedMode = this.currentSelection === 0 ? 'practice' : 'score';
 
-      if (import.meta.env.DEV) {
+      if (isDevEnvironment()) {
         console.log(`[MenuScene] Mode selected: ${this.selectedMode}`);
       }
 
@@ -337,7 +338,7 @@ export class MenuScene extends Phaser.Scene {
       // Start game with selected track
       const selectedTrack = TRACKS[this.currentSelection];
 
-      if (import.meta.env.DEV) {
+      if (isDevEnvironment()) {
         console.log(
           `[MenuScene] Track selected: ${selectedTrack.name}`
         );
@@ -365,7 +366,7 @@ export class MenuScene extends Phaser.Scene {
       // Recreate mode selection screen
       this.createModeSelectionScreen(width);
 
-      if (import.meta.env.DEV) {
+      if (isDevEnvironment()) {
         console.log('[MenuScene] Returned to mode selection');
       }
     }
@@ -409,7 +410,7 @@ export class MenuScene extends Phaser.Scene {
       trackName: selectedTrack.name,
     };
 
-    if (import.meta.env.DEV) {
+    if (isDevEnvironment()) {
       console.log('[MenuScene] Starting game with data:', gameData);
     }
 

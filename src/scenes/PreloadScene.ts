@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import type { PreloadSceneData, MenuSceneData } from '../types/SceneData';
 import { AssetKeys, AssetPaths } from '../config/AssetConfig';
+import { isDevEnvironment } from '../utils/env';
 
 /**
  * PreloadScene - Loads all game assets with visual progress feedback
@@ -25,7 +26,7 @@ export class PreloadScene extends Phaser.Scene {
     this.sceneData = data || {};
     this.loadStartTime = Date.now();
 
-    if (import.meta.env.DEV) {
+    if (isDevEnvironment()) {
       console.log('[PreloadScene] Initialized', this.sceneData);
     }
   }
@@ -42,7 +43,7 @@ export class PreloadScene extends Phaser.Scene {
     // Load all game assets
     this.loadAssets();
 
-    if (import.meta.env.DEV) {
+    if (isDevEnvironment()) {
       console.log('[PreloadScene] Loading assets...');
     }
   }
@@ -52,7 +53,7 @@ export class PreloadScene extends Phaser.Scene {
     const minimumDisplayTime = 500; // 500ms minimum display
     const remainingTime = Math.max(0, minimumDisplayTime - loadTime);
 
-    if (import.meta.env.DEV) {
+    if (isDevEnvironment()) {
       console.log(`[PreloadScene] Assets loaded in ${loadTime}ms`);
     }
 
@@ -75,7 +76,7 @@ export class PreloadScene extends Phaser.Scene {
     // Clear any active tweens
     this.tweens.killAll();
 
-    if (import.meta.env.DEV) {
+    if (isDevEnvironment()) {
       console.log('[PreloadScene] Shutdown complete');
     }
   }
@@ -140,14 +141,14 @@ export class PreloadScene extends Phaser.Scene {
 
     // Complete event - fires when all assets loaded
     this.load.on('complete', () => {
-      if (import.meta.env.DEV) {
+      if (isDevEnvironment()) {
         console.log('[PreloadScene] All assets loaded');
       }
     });
 
     // Error event - fires if asset fails to load
     this.load.on('loaderror', (file: Phaser.Loader.File) => {
-      if (import.meta.env.DEV) {
+      if (isDevEnvironment()) {
         console.error(`[PreloadScene] Failed to load: ${file.key}`);
       }
     });
@@ -235,7 +236,7 @@ export class PreloadScene extends Phaser.Scene {
     const displayKey = key || 'Loading...';
     this.assetText.setText(displayKey);
 
-    if (import.meta.env.DEV) {
+    if (isDevEnvironment()) {
       console.log(`[PreloadScene] Loaded: ${displayKey}`);
     }
   }
@@ -250,7 +251,7 @@ export class PreloadScene extends Phaser.Scene {
         assetsLoaded: true,
       };
 
-      if (import.meta.env.DEV) {
+      if (isDevEnvironment()) {
         console.log('[PreloadScene] Transitioning to MenuScene');
       }
 

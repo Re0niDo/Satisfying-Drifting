@@ -59,7 +59,7 @@ describe('PreloadScene', () => {
     };
 
     mockTime = {
-      delayedCall: jest.fn((delay: number, callback: Function) => {
+      delayedCall: jest.fn((_delay: number, callback: Function) => {
         callback();
       }),
       removeAllEvents: jest.fn(),
@@ -487,19 +487,17 @@ describe('PreloadScene', () => {
     it('should center progress bar on screen', () => {
       scene.preload();
 
-      // Verify graphics fillRect was called (progress bar positioning)
-      const graphics = mockAdd.graphics();
-      expect(graphics.fillRect).toHaveBeenCalled();
+      const progressBoxGraphics = mockAdd.graphics.mock.results[0]?.value;
+      expect(progressBoxGraphics?.fillRect).toHaveBeenCalled();
     });
 
     it('should create progress bar with correct styling', () => {
       scene.preload();
 
-      const graphics = mockAdd.graphics();
+      const progressBoxGraphics = mockAdd.graphics.mock.results[0]?.value;
 
-      // Check that styling methods were called
-      expect(graphics.fillStyle).toHaveBeenCalled();
-      expect(graphics.lineStyle).toHaveBeenCalled();
+      expect(progressBoxGraphics?.fillStyle).toHaveBeenCalled();
+      expect(progressBoxGraphics?.lineStyle).toHaveBeenCalled();
     });
   });
 });

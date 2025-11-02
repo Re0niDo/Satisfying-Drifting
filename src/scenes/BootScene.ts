@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import type { BootSceneData, PreloadSceneData } from '../types/SceneData';
+import { isDevEnvironment } from '../utils/env';
 
 /**
  * BootScene - First scene in the game lifecycle
@@ -30,7 +31,7 @@ export class BootScene extends Phaser.Scene {
     this.bootStartTime = performance.now();
 
     // Log initialization in development mode
-    if (import.meta.env.DEV) {
+    if (isDevEnvironment()) {
       console.log('[BootScene] Initializing...');
     }
 
@@ -47,7 +48,7 @@ export class BootScene extends Phaser.Scene {
    * - Minimal UI elements needed for loading screen
    */
   preload(): void {
-    if (import.meta.env.DEV) {
+    if (isDevEnvironment()) {
       console.log('[BootScene] Preloading critical assets...');
     }
 
@@ -56,7 +57,7 @@ export class BootScene extends Phaser.Scene {
     // this.load.image('logo', 'assets/images/logo.png');
 
     // Set loading progress callbacks for debugging
-    if (import.meta.env.DEV) {
+    if (isDevEnvironment()) {
       this.load.on('progress', (value: number) => {
         console.log(`[BootScene] Loading progress: ${Math.round(value * 100)}%`);
       });
@@ -72,7 +73,7 @@ export class BootScene extends Phaser.Scene {
    * Called after preload completes.
    */
   create(): void {
-    if (import.meta.env.DEV) {
+    if (isDevEnvironment()) {
       console.log('[BootScene] Creating scene...');
     }
 
@@ -136,7 +137,7 @@ export class BootScene extends Phaser.Scene {
     const bootEndTime = performance.now();
     const bootDuration = bootEndTime - this.bootStartTime;
 
-    if (import.meta.env.DEV) {
+    if (isDevEnvironment()) {
       console.log(`[BootScene] Boot completed in ${bootDuration.toFixed(2)}ms`);
 
       // Warn if boot time exceeds target
@@ -162,7 +163,7 @@ export class BootScene extends Phaser.Scene {
    * so they should NOT be cleaned up here.
    */
   shutdown(): void {
-    if (import.meta.env.DEV) {
+    if (isDevEnvironment()) {
       console.log('[BootScene] Shutting down...');
     }
 

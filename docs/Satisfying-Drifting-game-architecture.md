@@ -847,6 +847,21 @@ dataProcessor.addToUpdateList(); // Ensure it's in update list if needed
 - **Mock heavy dependencies**: Don't load actual Phaser scenes in unit tests
 - **Aim for 80%+ coverage** on systems and utils (not targeting 100% on Phaser wrappers)
 
+**Jest Environment Setup:**
+- **Global canvas shim**: `tests/setup/jest.setup.ts` installs an `HTMLCanvasElement.getContext` mock so Phaser feature checks succeed under jsdom. Keep all canvas-specific overrides there.
+- **Vite env bridge**: Scenes should read build flags via `isDevEnvironment()` from `src/utils/env.ts`. Avoid direct `import.meta.env` access in testable code; the helper falls back to `__VITE_IMPORT_META_ENV__` seeded by the Jest setup file.
+- **Phaser mock module**: `tests/__mocks__/phaser.ts` exports a lightweight Scene/GameObjects stub. Test files that import Phaser should call `jest.mock('phaser')` (or rely on automocking) before importing the code under test so the stub is used instead of the real engine.
+- **Optional dependency stub**: `tests/mocks/phaser3spectorjs.ts` satisfies Phaser’s optional `phaser3spectorjs` import. If Phaser pulls in new optional packages, add similar stubs and wire them through `jest.config.cjs`.
+- **TypeScript config**: `tsconfig.test.json` extends the main compiler options for ts-jest and injects Jest types. When a test suite needs custom compiler behavior, adjust this file rather than the production `tsconfig.json`.
+- **Jest configuration**: `jest.config.cjs` already wires `setupFilesAfterEnv`, the phaser spector mapper, and the test tsconfig. When adding transforms or module aliases, update this single source so all suites inherit the same environment.
+
+**Writing Phaser Scene Tests:**
+- **Instantiate scenes directly**: Use `new SceneClass()` rather than spinning up `new Phaser.Game(...)`. The mock Scene constructor mirrors the expected APIs (registry, tweens, cameras, etc.) and keeps tests synchronous.
+- **Reset shared mocks**: Call `jest.clearAllMocks()` in `afterEach` when a suite mutates the shared Phaser mock (e.g., keyboard listeners, audio state) to avoid cross-test leakage.
+- **Leverage mock behaviors**: The mock scene auto-invokes callbacks for timers, camera fades, and events. Tests can assert side effects immediately after calling lifecycle methods without waiting for async ticks.
+- **Verify UI via stubs**: Inspect `scene.children.list` for `Phaser.GameObjects.Text` and `Rectangle` instances created by the scene under test; the mock stores every added object to aid snapshot-like assertions.
+- **Control menu/audio state**: Override `scene.cache.audio.exists` or `scene.sound.add` with `jest.spyOn` to simulate available assets or audio playback behavior within unit tests.
+
 ---
 
 ## Deployment Architecture
