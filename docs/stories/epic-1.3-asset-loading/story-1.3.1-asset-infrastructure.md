@@ -468,13 +468,13 @@ this.add.image(100, 100, 'missing-image'); // Should show magenta rectangle
 5. Verify `reset()` clears all tracking data
 6. Test that repeated singleton calls return same instance
 7. Update README with asset management usage examples
-8. Document placeholder asset expectations in `docs/ASSET_GUIDELINES.md`
+8. Document placeholder asset expectations in `docs/ASSET-GUIDELINES.md`
 
 **Acceptance:**
 - [x] Test scene successfully loads and displays assets
 - [x] Placeholders appear for missing assets
 - [x] All AssetManager methods tested
-- [x] Documentation complete in README and ASSET_GUIDELINES
+- [x] Documentation complete in README and ASSET-GUIDELINES
 - [x] No console errors during testing
 
 **Dependencies:** Tasks 1-4 (all prior tasks complete)
@@ -626,7 +626,7 @@ class TestAssetLoadingScene extends Phaser.Scene {
 - [x] JSDoc comments on all public APIs
 - [x] No ESLint warnings or errors
 - [x] Phaser 3.90+ best practices followed (memory leak prevention)
-- [x] Documentation updated (README, ASSET_GUIDELINES)
+- [x] Documentation updated (README, ASSET-GUIDELINES)
 - [x] Code reviewed by another developer (or AI review passed)
 - [x] Performance targets met (verified with DevTools)
 - [x] Works in both development and production builds
@@ -679,7 +679,7 @@ class TestAssetLoadingScene extends Phaser.Scene {
 ## Related Documents
 
 - [Game Architecture Document](../Satisfying-Drifting-game-architecture.md) - Asset Management System section
-- [Asset Guidelines](../ASSET_GUIDELINES.md) - Asset creation standards (create if doesn't exist)
+- [Asset Guidelines](../ASSET-GUIDELINES.md) - Asset creation standards (create if doesn't exist)
 - [Story 1.3.2](./story-1.3.2-preload-integration.md) - Next story in this epic
 
 ---

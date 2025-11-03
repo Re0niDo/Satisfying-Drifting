@@ -86,7 +86,7 @@ assets/
 - `assets/audio/sfx/perfect-drift-placeholder.mp3` - Silent 0.3-second audio file
 - `assets/audio/music/bgm-placeholder.mp3` - Silent 30-second audio file
 - `src/config/AssetConfig.ts` - Asset key constants and path mappings
-- `docs/ASSET_GUIDELINES.md` - Asset naming conventions and specifications
+- `docs/ASSET-GUIDELINES.md` - Asset naming conventions and specifications
 
 **Modified Files:**
 
@@ -177,7 +177,7 @@ export function getAssetPath(key: string): string {
 ### Asset Guidelines Document
 
 ```markdown
-<!-- docs/ASSET_GUIDELINES.md -->
+<!-- docs/ASSET-GUIDELINES.md -->
 
 # Asset Guidelines for Satisfying Drifting
 
@@ -341,11 +341,11 @@ When adding a new asset:
 - [x] Create silent MP3 placeholder for background music (30-second duration)
 - [x] Create `src/config/AssetConfig.ts` with AssetKeys and AssetPaths constants
 - [x] Add getAssetPath helper function to AssetConfig.ts
-- [x] Create `docs/ASSET_GUIDELINES.md` documentation
+- [x] Create `docs/ASSET-GUIDELINES.md` documentation
 - [x] Test all placeholder assets load in simple test scene (or next story)
 - [x] Verify no console errors when loading assets
 - [x] Commit all assets and configuration files to repository
-- [x] Document how to replace placeholders in ASSET_GUIDELINES.md
+- [x] Document how to replace placeholders in ASSET-GUIDELINES.md
 
 **Debug Log:**
 | Task | File | Change | Reverted? |
@@ -424,7 +424,7 @@ This story implements the Asset Management System section:
    - Verification: Use file properties or `ls -lh assets/images/sprites/`
 
 6. **Documentation Completeness**
-   - Review `docs/ASSET_GUIDELINES.md`
+   - Review `docs/ASSET-GUIDELINES.md`
    - Verify all sections present (naming, specs, optimization)
    - Expected: Complete documentation for future asset creators
    - Verification: Manual review of document
@@ -463,7 +463,7 @@ This story implements the Asset Management System section:
 - [x] Complete asset directory structure created
 - [x] All placeholder assets created and committed to repository
 - [x] AssetConfig.ts created with all asset key constants
-- [x] ASSET_GUIDELINES.md documentation created
+- [x] ASSET-GUIDELINES.md documentation created
 - [x] All 7 manual test cases pass successfully
 - [x] No console errors when loading placeholder assets
 - [x] All placeholder assets under 10KB each
@@ -516,7 +516,7 @@ When final assets are ready:
 3. Ensure new asset meets specifications (size, format, dimensions)
 4. Test loading in development build before committing
 5. Remove old placeholder file to avoid confusion
-6. Update ASSET_GUIDELINES.md if specifications change
+6. Update ASSET-GUIDELINES.md if specifications change
 
 ---
 

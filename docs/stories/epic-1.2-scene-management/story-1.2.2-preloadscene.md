@@ -60,7 +60,7 @@ Implement the PreloadScene, which loads all game assets (images, audio, data) wi
 **Files to Reference:**
 - `src/config/AssetConfig.ts` - Asset keys and paths
 - `src/types/SceneData.ts` - Scene data interfaces
-- `docs/ASSET_GUIDELINES.md` - Asset specifications
+- `docs/ASSET-GUIDELINES.md` - Asset specifications
 
 **No New Files Created**
 
