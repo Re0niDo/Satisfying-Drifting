@@ -50,6 +50,104 @@ class Rectangle {
   destroy = jest.fn();
 }
 
+class Graphics {
+  constructor(public scene: any) {}
+
+  fillStyle = jest.fn(() => this);
+  fillRect = jest.fn(() => this);
+  lineStyle = jest.fn(() => this);
+  strokeRect = jest.fn(() => this);
+  generateTexture = jest.fn(() => this);
+  destroy = jest.fn();
+}
+
+class Sprite {
+  public x: number;
+  public y: number;
+  public angle: number = 0;
+  public width: number = 32;
+  public height: number = 48;
+  public body: any;
+  public texture: { key: string };
+  public scene: any;
+  private listeners: Map<string, Function[]> = new Map();
+
+  constructor(
+    scene: any,
+    x: number,
+    y: number,
+    texture: string
+  ) {
+    this.scene = scene;
+    this.x = x;
+    this.y = y;
+    this.texture = { key: texture };
+    
+    // Mock physics body
+    this.body = {
+      velocity: { x: 0, y: 0 },
+      speed: 0,
+      setSize: jest.fn(),
+      setCollideWorldBounds: jest.fn(),
+      setDrag: jest.fn(),
+      setAngularDrag: jest.fn(),
+      setBounce: jest.fn(),
+      setMaxVelocity: jest.fn(),
+      reset: jest.fn((x: number, y: number) => {
+        this.x = x;
+        this.y = y;
+        this.body.velocity = { x: 0, y: 0 };
+        this.body.speed = 0;
+      }),
+      setVelocity: jest.fn((x: number, y: number) => {
+        this.body.velocity = { x, y };
+        this.body.speed = Math.sqrt(x * x + y * y);
+      }),
+      setAngularVelocity: jest.fn(),
+    };
+  }
+
+  setOrigin = jest.fn(() => this);
+  setDepth = jest.fn(() => this);
+  setPosition = jest.fn((x: number, y: number) => {
+    this.x = x;
+    this.y = y;
+    return this;
+  });
+  setAngle = jest.fn((angle: number) => {
+    this.angle = angle;
+    return this;
+  });
+  
+  // Mock destroy to call preDestroy if it exists
+  destroy = jest.fn(function(this: any) {
+    if (this.preDestroy && typeof this.preDestroy === 'function') {
+      this.preDestroy();
+    }
+  });
+  
+  removeAllListeners = jest.fn(() => {
+    this.listeners.clear();
+  });
+  on = jest.fn((event: string, fn: Function) => {
+    if (!this.listeners.has(event)) {
+      this.listeners.set(event, []);
+    }
+    this.listeners.get(event)!.push(fn);
+    return this;
+  });
+  off = jest.fn((event: string, fn: Function) => {
+    const eventListeners = this.listeners.get(event);
+    if (eventListeners) {
+      const index = eventListeners.indexOf(fn);
+      if (index !== -1) {
+        eventListeners.splice(index, 1);
+      }
+    }
+    return this;
+  });
+}
+
 class Scene {
   public sys: { settings: { key: string } };
   public registry = createRegistry();
@@ -81,6 +179,13 @@ class Scene {
   public add: {
     text: jest.Mock;
     rectangle: jest.Mock;
+    existing: jest.Mock;
+    graphics: jest.Mock;
+  };
+  public physics: {
+    add: {
+      existing: jest.Mock;
+    };
   };
   public sound = {
     add: jest.fn(() => ({
@@ -150,6 +255,22 @@ class Scene {
           return obj;
         }
       ),
+      existing: jest.fn((obj: any) => {
+        this.children.list.push(obj);
+        return obj;
+      }),
+      graphics: jest.fn(() => {
+        return new Graphics(this);
+      }),
+    };
+
+    this.physics = {
+      add: {
+        existing: jest.fn((obj: any) => {
+          // Physics body is already mocked in Sprite constructor
+          return obj;
+        }),
+      },
     };
   }
 }
@@ -157,6 +278,8 @@ class Scene {
 const GameObjects = {
   Text,
   Rectangle,
+  Sprite,
+  Graphics,
 };
 
 const Sound = {
@@ -170,11 +293,30 @@ const Core = {
   },
 };
 
+const Physics = {
+  Arcade: {
+    Body: class {
+      velocity = { x: 0, y: 0 };
+      speed = 0;
+      setSize = jest.fn();
+      setCollideWorldBounds = jest.fn();
+      setDrag = jest.fn();
+      setAngularDrag = jest.fn();
+      setBounce = jest.fn();
+      setMaxVelocity = jest.fn();
+      reset = jest.fn();
+      setVelocity = jest.fn();
+      setAngularVelocity = jest.fn();
+    },
+  },
+};
+
 const PhaserMock = {
   Scene,
   GameObjects,
   Sound,
   Core,
+  Physics,
   HEADLESS: 0,
 };
 

@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import type { GameSceneData, MenuSceneData } from '../types/SceneData';
 import { isDevEnvironment } from '../utils/env';
+import { Car } from '../gameObjects/Car';
 
 /**
  * GameScene - Main gameplay scene
@@ -14,6 +15,9 @@ export class GameScene extends Phaser.Scene {
   private currentMode!: 'practice' | 'score';
   private currentTrackId!: string;
   private currentTrackName!: string;
+
+  // Game objects
+  private car?: Car;
 
   // Text display objects
   private trackText?: Phaser.GameObjects.Text;
@@ -63,6 +67,17 @@ export class GameScene extends Phaser.Scene {
    */
   create(): void {
     const { width, height } = this.cameras.main;
+
+    // Create placeholder car sprite texture (32x48px red rectangle)
+    this.createPlaceholderCarTexture();
+
+    // Create car at center of screen
+    this.car = new Car(this, width / 2, height / 2, 'car_placeholder');
+
+    // Expose car in debug mode for manual testing
+    if (isDevEnvironment()) {
+      (window as any).debugCar = this.car;
+    }
 
     // Display track name (top center)
     this.trackText = this.add
@@ -124,6 +139,33 @@ export class GameScene extends Phaser.Scene {
       const initTime = Date.now() - this.sceneStartTime;
       console.log(`[GameScene] Scene created in ${initTime}ms`);
     }
+  }
+
+  /**
+   * Create a placeholder car texture (32x48px red rectangle)
+   */
+  private createPlaceholderCarTexture(): void {
+    // Check if texture already exists (e.g., after scene restart)
+    if (this.textures.exists('car_placeholder')) {
+      return;
+    }
+
+    // Create graphics object
+    const graphics = this.add.graphics();
+    
+    // Draw red rectangle
+    graphics.fillStyle(0xff0000, 1); // Red color
+    graphics.fillRect(0, 0, 32, 48);
+    
+    // Add white border for visibility
+    graphics.lineStyle(2, 0xffffff, 1);
+    graphics.strokeRect(0, 0, 32, 48);
+    
+    // Generate texture from graphics
+    graphics.generateTexture('car_placeholder', 32, 48);
+    
+    // Destroy graphics object (texture is now saved)
+    graphics.destroy();
   }
 
   /**
@@ -190,6 +232,11 @@ export class GameScene extends Phaser.Scene {
    * @param _delta - Time elapsed since last frame
    */
   update(_time: number, _delta: number): void {
+    // Update car if it exists
+    if (this.car) {
+      this.car.update(_time, _delta);
+    }
+
     // Empty game loop placeholder
     // Phase 2 will add:
     // - Input polling for car controls
@@ -211,6 +258,17 @@ export class GameScene extends Phaser.Scene {
   shutdown(): void {
     if (isDevEnvironment()) {
       console.log('[GameScene] Shutdown initiated');
+    }
+
+    // Clean up car
+    if (this.car) {
+      this.car.destroy();
+      this.car = undefined;
+    }
+
+    // Clear debug reference
+    if (isDevEnvironment()) {
+      delete (window as any).debugCar;
     }
 
     // Remove all keyboard event listeners

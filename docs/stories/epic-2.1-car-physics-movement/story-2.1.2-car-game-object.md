@@ -4,7 +4,7 @@
 **Story ID:** 2.1.2  
 **Priority:** High  
 **Points:** 3  
-**Status:** Draft
+**Status:** ✅ Complete
 
 ---
 
@@ -22,28 +22,28 @@ At this stage, the Car is a passive object with physics enabled but no movement 
 
 ### Functional Requirements
 
-- [ ] Car game object extends Phaser.GameObjects.Sprite
-- [ ] Car has Arcade Physics body with proper collision bounds
-- [ ] Car can be instantiated with position (x, y) and optional rotation
-- [ ] Car is visible in GameScene with placeholder sprite (colored rectangle)
-- [ ] Car properly cleans up resources when destroyed (implements preDestroy)
-- [ ] Car can be positioned, rotated, and displayed without errors
+- [x] Car game object extends Phaser.GameObjects.Sprite
+- [x] Car has Arcade Physics body with proper collision bounds
+- [x] Car can be instantiated with position (x, y) and optional rotation
+- [x] Car is visible in GameScene with placeholder sprite (colored rectangle)
+- [x] Car properly cleans up resources when destroyed (implements preDestroy)
+- [x] Car can be positioned, rotated, and displayed without errors
 
 ### Technical Requirements
 
-- [ ] Code follows TypeScript strict mode standards
-- [ ] Implements Phaser 3.90+ lifecycle methods (preDestroy, addedToScene, removedFromScene)
-- [ ] Uses ICarPhysicsState interface from Story 2.1.1
-- [ ] Memory leak prevention: implements removeAllListeners() in cleanup
-- [ ] Physics body configuration follows architecture specifications
-- [ ] Proper JSDoc comments for all public methods
+- [x] Code follows TypeScript strict mode standards
+- [x] Implements Phaser 3.90+ lifecycle methods (preDestroy, addedToScene, removedFromScene)
+- [x] Uses ICarPhysicsState interface from Story 2.1.1
+- [x] Memory leak prevention: implements removeAllListeners() in cleanup
+- [x] Physics body configuration follows architecture specifications
+- [x] Proper JSDoc comments for all public methods
 
 ### Game Design Requirements
 
-- [ ] Car sprite dimensions match intended gameplay scale (placeholder: 32x48px rectangle)
-- [ ] Physics body collision bounds are accurate for gameplay (slightly smaller than sprite)
-- [ ] Car origin point is centered for correct rotation behavior
-- [ ] Default car color is distinguishable from track background (bright red/blue)
+- [x] Car sprite dimensions match intended gameplay scale (placeholder: 32x48px rectangle)
+- [x] Physics body collision bounds are accurate for gameplay (slightly smaller than sprite)
+- [x] Car origin point is centered for correct rotation behavior
+- [x] Default car color is distinguishable from track background (bright red/blue)
 
 ---
 
@@ -264,59 +264,59 @@ export class Car extends Phaser.GameObjects.Sprite {
 Developers should complete these tasks in order:
 
 ### Task 1: Create Placeholder Car Sprite
-- [ ] Create a 32x48px red rectangle as temporary car sprite
-- [ ] Add to `src/scenes/GameScene.ts` preload method as graphics texture
-- [ ] Generate texture with key 'car_placeholder' using Phaser.GameObjects.Graphics
-- [ ] Verify placeholder renders correctly in scene
+- [x] Create a 32x48px red rectangle as temporary car sprite
+- [x] Add to `src/scenes/GameScene.ts` preload method as graphics texture
+- [x] Generate texture with key 'car_placeholder' using Phaser.GameObjects.Graphics
+- [x] Verify placeholder renders correctly in scene
 
 ### Task 2: Implement Car Class
-- [ ] Create `src/gameObjects/Car.ts` file
-- [ ] Implement Car class extending Phaser.GameObjects.Sprite
-- [ ] Implement constructor with scene, position, and optional texture parameters
-- [ ] Add Car to scene display list and physics world in constructor
-- [ ] Implement setupPhysicsBody() method with proper collision bounds
-- [ ] Implement createInitialState() to initialize ICarPhysicsState
-- [ ] Add TypeScript type assertion for physics body (body!: Phaser.Physics.Arcade.Body)
+- [x] Create `src/gameObjects/Car.ts` file
+- [x] Implement Car class extending Phaser.GameObjects.Sprite
+- [x] Implement constructor with scene, position, and optional texture parameters
+- [x] Add Car to scene display list and physics world in constructor
+- [x] Implement setupPhysicsBody() method with proper collision bounds
+- [x] Implement createInitialState() to initialize ICarPhysicsState
+- [x] Add TypeScript type assertion for physics body (body!: Phaser.Physics.Arcade.Body)
 
 ### Task 3: Implement Position and Rotation Methods
-- [ ] Implement setCarPosition(x, y) method
-- [ ] Implement setCarRotation(degrees) method
-- [ ] Implement reset(x, y, rotation) method for respawn functionality
-- [ ] Implement getPhysicsState() getter returning readonly state
-- [ ] Verify all methods update both sprite and internal state
+- [x] Implement setCarPosition(x, y) method
+- [x] Implement setCarRotation(degrees) method
+- [x] Implement reset(x, y, rotation) method for respawn functionality
+- [x] Implement getPhysicsState() getter returning readonly state
+- [x] Verify all methods update both sprite and internal state
 
 ### Task 4: Implement Lifecycle Methods
-- [ ] Implement update(time, delta) method (currently syncs state from body)
-- [ ] Implement addedToScene() lifecycle callback (placeholder for future)
-- [ ] Implement removedFromScene() lifecycle callback (placeholder for future)
-- [ ] Implement preDestroy() with removeAllListeners() call
-- [ ] Add JSDoc comments for all lifecycle methods
+- [x] Implement update(time, delta) method (currently syncs state from body)
+- [x] Implement addedToScene() lifecycle callback (placeholder for future)
+- [x] Implement removedFromScene() lifecycle callback (placeholder for future)
+- [x] Implement preDestroy() with removeAllListeners() call
+- [x] Add JSDoc comments for all lifecycle methods
 
 ### Task 5: Integrate with GameScene
-- [ ] Modify `src/scenes/GameScene.ts` to create Car instance
-- [ ] Position Car at spawn point (center of screen for testing)
-- [ ] Call Car.update() in GameScene.update() method
-- [ ] Add Car reference as private scene property
-- [ ] Test Car appears correctly and rotates smoothly
+- [x] Modify `src/scenes/GameScene.ts` to create Car instance
+- [x] Position Car at spawn point (center of screen for testing)
+- [x] Call Car.update() in GameScene.update() method
+- [x] Add Car reference as private scene property
+- [x] Test Car appears correctly and rotates smoothly
 
 ### Task 6: Write Unit Tests
-- [ ] Create `tests/gameObjects/Car.test.ts` file
-- [ ] Test: Car constructor initializes correctly
-- [ ] Test: Physics body is configured with correct bounds
-- [ ] Test: setCarPosition updates position and physics body
-- [ ] Test: setCarRotation updates rotation correctly
-- [ ] Test: reset() method restores initial state
-- [ ] Test: getPhysicsState() returns valid state object
-- [ ] Test: preDestroy() cleans up listeners
-- [ ] Achieve 80%+ test coverage
+- [x] Create `tests/gameObjects/Car.test.ts` file
+- [x] Test: Car constructor initializes correctly
+- [x] Test: Physics body is configured with correct bounds
+- [x] Test: setCarPosition updates position and physics body
+- [x] Test: setCarRotation updates rotation correctly
+- [x] Test: reset() method restores initial state
+- [x] Test: getPhysicsState() returns valid state object
+- [x] Test: preDestroy() cleans up listeners
+- [x] Achieve 80%+ test coverage
 
 ### Task 7: Manual Testing in Game
-- [ ] Run game in development mode
-- [ ] Verify Car appears at center of screen
-- [ ] Use browser console to manually rotate Car: `car.setCarRotation(45)`
-- [ ] Use browser console to move Car: `car.setCarPosition(400, 300)`
-- [ ] Verify no console errors or TypeScript warnings
-- [ ] Verify Car cleanup when restarting scene (R key)
+- [x] Run game in development mode
+- [x] Verify Car appears at center of screen
+- [x] Use browser console to manually rotate Car: `car.setCarRotation(45)`
+- [x] Use browser console to move Car: `car.setCarPosition(400, 300)`
+- [x] Verify no console errors or TypeScript warnings
+- [x] Verify Car cleanup when restarting scene (R key)
 
 ---
 
@@ -427,18 +427,18 @@ describe('Car', () => {
 
 ## Definition of Done
 
-- [ ] Car class implemented with all required methods
-- [ ] Car uses ICarPhysicsState interface correctly
-- [ ] Physics body configured with proper collision bounds
-- [ ] Lifecycle methods implemented (preDestroy, addedToScene, removedFromScene)
-- [ ] Car appears in GameScene with placeholder sprite
-- [ ] Unit tests achieve 80%+ coverage
-- [ ] Manual testing confirms car renders and behaves correctly
-- [ ] No memory leaks when destroying/recreating car
-- [ ] TypeScript compiles with zero errors in strict mode
-- [ ] ESLint passes with zero warnings
-- [ ] Code reviewed and approved
-- [ ] Story marked as "Complete"
+- [x] Car class implemented with all required methods
+- [x] Car uses ICarPhysicsState interface correctly
+- [x] Physics body configured with proper collision bounds
+- [x] Lifecycle methods implemented (preDestroy, addedToScene, removedFromScene)
+- [x] Car appears in GameScene with placeholder sprite
+- [x] Unit tests achieve 80%+ coverage
+- [x] Manual testing confirms car renders and behaves correctly
+- [x] No memory leaks when destroying/recreating car
+- [x] TypeScript compiles with zero errors in strict mode
+- [x] ESLint passes with zero warnings
+- [x] Code reviewed and approved
+- [x] Story marked as "Complete"
 
 ---
 

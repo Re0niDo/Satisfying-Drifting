@@ -5,6 +5,9 @@ jest.mock('phaser', () => {
         default: {
             AUTO: 0,
             Scene: class {},
+            GameObjects: {
+                Sprite: class {},
+            },
             Scale: {
                 FIT: 1,
                 CENTER_BOTH: 1,
