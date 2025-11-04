@@ -10,7 +10,7 @@
 
 ## Description
 
-Extend the DriftPhysics system to implement full drift mechanics: drift state detection based on lateral velocity, smooth state transitions between Grip/Drift/Handbrake modes, state-specific friction coefficients, and speed loss during drifts. This story completes the core physics system, transforming the basic driving from Story 2.1.4 into a satisfying drift experience that defines the game's unique feel.
+Extend the DriftPhysics system to implement full drift mechanics: drift state detection based on lateral velocity, smooth state transitions between Normal/Drift/Handbrake modes, state-specific friction coefficients, and speed loss during drifts. This story completes the core physics system, transforming the basic driving from Story 2.1.4 into a satisfying drift experience that defines the game's unique feel.
 
 The drift mechanics calculate lateral velocity by comparing the car's heading direction with its actual movement direction. When lateral velocity exceeds the threshold (100 px/s), the car enters drift state with reduced friction, creating the characteristic slide. Smooth lerp transitions between states ensure the physics feel natural rather than sudden.
 
@@ -25,9 +25,9 @@ The drift mechanics calculate lateral velocity by comparing the car's heading di
 - [ ] Calculates lateral velocity from car heading vs movement direction
 - [ ] Detects drift state when lateral velocity exceeds driftThreshold (100 px/s)
 - [ ] Enters handbrake state when Space pressed (lowest friction)
-- [ ] Returns to grip state when lateral velocity drops below threshold
+- [ ] Returns to normal state when lateral velocity drops below threshold
 - [ ] Smooth transitions between states using 0.2s lerp (no sudden changes)
-- [ ] Applies state-specific friction: grip (0.95), drift (0.7), handbrake (0.5)
+- [ ] Applies state-specific friction: normal (0.95), drift (0.7), handbrake (0.5)
 - [ ] Implements speed loss during drift (5% per second) and handbrake (2% per second)
 - [ ] Exposes drift angle, speed, and state for other systems (debugging and UI)
 
@@ -45,7 +45,7 @@ The drift mechanics calculate lateral velocity by comparing the car's heading di
 
 - [ ] Drift state feels natural and predictable (not random)
 - [ ] Handbrake initiates drift immediately when pressed
-- [ ] Exiting drift feels smooth (not abrupt return to grip)
+- [ ] Exiting drift feels smooth (not abrupt return to normal)
 - [ ] Drift angle is visible and corresponds to slide direction
 - [ ] Speed loss during drift is noticeable but not punishing
 - [ ] Physics support "drift entry" technique (sharp turn + throttle)
@@ -76,9 +76,9 @@ export class DriftPhysics {
     // ... existing properties from Story 2.1.4
     
     // Drift state tracking
-    private currentState: DriftState = DriftState.Grip;
+    private currentState: DriftState = DriftState.Normal;
     private stateTransitionProgress: number = 1.0; // 1.0 = fully transitioned
-    private targetState: DriftState = DriftState.Grip;
+    private targetState: DriftState = DriftState.Normal;
     
     // Drift calculations
     private lateralVelocity: number = 0;
@@ -125,8 +125,8 @@ export class DriftPhysics {
             // Lateral velocity high enough for drift
             newTargetState = DriftState.Drift;
         } else {
-            // Normal grip driving
-            newTargetState = DriftState.Grip;
+            // Normal driving
+            newTargetState = DriftState.Normal;
         }
         
         // Update target state if changed
@@ -191,8 +191,8 @@ export class DriftPhysics {
         // If fully transitioned, return target state friction
         if (this.stateTransitionProgress >= 1.0) {
             switch (this.currentState) {
-                case DriftState.Grip:
-                    return config.gripFriction;
+                case DriftState.Normal:
+                    return config.normalFriction;
                 case DriftState.Drift:
                     return config.driftFriction;
                 case DriftState.Handbrake:
@@ -217,8 +217,8 @@ export class DriftPhysics {
     private getFrictionForState(state: DriftState): number {
         const config = PhysicsConfig.car;
         switch (state) {
-            case DriftState.Grip:
-                return config.gripFriction;
+            case DriftState.Normal:
+                return config.normalFriction;
             case DriftState.Drift:
                 return config.driftFriction;
             case DriftState.Handbrake:
@@ -228,7 +228,7 @@ export class DriftPhysics {
     
     /**
      * Apply friction based on current drift state
-     * (Replaces Story 2.1.4 version that always used grip friction)
+     * (Replaces Story 2.1.4 version that always used normal friction)
      */
     private updateFriction(delta: number): void {
         const effectiveFriction = this.getEffectiveFriction();
@@ -256,7 +256,7 @@ export class DriftPhysics {
             this.body.velocity.y *= speedRetention;
         }
         
-        // Grip state: no additional speed loss beyond friction
+        // Normal state: no additional speed loss beyond friction
     }
     
     // Public API for other systems (UI, quality evaluation)
@@ -330,7 +330,7 @@ Developers should complete these tasks in order:
 - [ ] Add currentState, targetState properties to DriftPhysics
 - [ ] Add stateTransitionProgress property (0-1 lerp progress)
 - [ ] Add lateralVelocity and driftAngle properties
-- [ ] Initialize all to default values (Grip state, 0 velocity/angle)
+- [ ] Initialize all to default values (Normal state, 0 velocity/angle)
 
 ### Task 2: Implement Lateral Velocity Calculation
 - [ ] Implement calculateLateralVelocity() method
@@ -346,7 +346,7 @@ Developers should complete these tasks in order:
 - [ ] Call calculateLateralVelocity() first
 - [ ] Check if handbrake pressed → target = Handbrake
 - [ ] Check if |lateralVelocity| >= driftThreshold → target = Drift
-- [ ] Otherwise → target = Grip
+- [ ] Otherwise → target = Normal
 - [ ] If target state changed, reset stateTransitionProgress to 0
 - [ ] Call updateStateTransition(delta) to lerp toward target
 
@@ -366,7 +366,7 @@ Developers should complete these tasks in order:
 
 ### Task 6: Update Friction Application
 - [ ] Modify updateFriction(delta) from Story 2.1.4
-- [ ] Replace hardcoded gripFriction with getEffectiveFriction()
+- [ ] Replace hardcoded normalFriction with getEffectiveFriction()
 - [ ] Apply friction using existing applyFriction utility
 - [ ] Verify friction changes smoothly during state transitions
 
@@ -374,7 +374,7 @@ Developers should complete these tasks in order:
 - [ ] Implement applySpeedLoss(delta) method
 - [ ] If in Drift state, apply driftSpeedRetention
 - [ ] If in Handbrake state, apply handbrakeSpeedRetention
-- [ ] If in Grip state, no additional speed loss
+- [ ] If in Normal state, no additional speed loss
 - [ ] Use Math.pow for frame-rate independence
 - [ ] Call from update() after updateFriction()
 
@@ -412,7 +412,7 @@ Developers should complete these tasks in order:
 - [ ] Run game and accelerate to medium speed
 - [ ] Test: Sharp turn without handbrake → verify drift state entered
 - [ ] Test: Handbrake pressed → immediate drift entry
-- [ ] Test: Straighten out during drift → verify return to grip
+- [ ] Test: Straighten out during drift → verify return to normal
 - [ ] Test: Drift angle displayed correctly (debug UI)
 - [ ] Test: Can maintain sustained drift through continuous steering
 - [ ] Test: Speed decreases noticeably during long drift
@@ -486,8 +486,8 @@ describe('DriftPhysics - State Detection', () => {
         physics = new DriftPhysics(car, input);
     });
     
-    it('should start in grip state', () => {
-        expect(physics.getDriftState()).toBe(DriftState.Grip);
+    it('should start in normal state', () => {
+        expect(physics.getDriftState()).toBe(DriftState.Normal);
     });
     
     it('should enter drift state when lateral velocity exceeds threshold', () => {
@@ -524,7 +524,7 @@ describe('DriftPhysics - State Detection', () => {
         expect(physics.getDriftState()).toBe(DriftState.Handbrake);
     });
     
-    it('should return to grip when lateral velocity drops', () => {
+    it('should return to normal when lateral velocity drops', () => {
         // Enter drift state
         car.angle = 0;
         car.body.setVelocity(100, 80);
@@ -539,7 +539,7 @@ describe('DriftPhysics - State Detection', () => {
             physics.update(16.67);
         }
         
-        expect(physics.getDriftState()).toBe(DriftState.Grip);
+        expect(physics.getDriftState()).toBe(DriftState.Normal);
     });
 });
 ```
@@ -573,15 +573,15 @@ describe('DriftPhysics - State Transitions', () => {
 **Friction and Speed Loss:**
 ```typescript
 describe('DriftPhysics - Friction and Speed Loss', () => {
-    it('should lose speed faster in drift than grip', () => {
+    it('should lose speed faster in drift than normal', () => {
         const car1 = createMockCar();
         const car2 = createMockCar();
         const input1 = createMockInputManager();
         const input2 = createMockInputManager();
-        const physics1 = new DriftPhysics(car1, input1); // Grip
+        const physics1 = new DriftPhysics(car1, input1); // Normal
         const physics2 = new DriftPhysics(car2, input2); // Drift
         
-        // Car 1: Grip state
+        // Car 1: Normal state
         car1.body.setVelocity(200, 0);
         input1.isHandbraking.mockReturnValue(false);
         
@@ -616,7 +616,7 @@ describe('DriftPhysics - Friction and Speed Loss', () => {
 3. Verify immediate drift state change
 4. Verify reduced friction (car slides more)
 5. Release Space
-6. Verify smooth return to grip
+6. Verify smooth return to normal
 
 **Sustained Drift Test:**
 1. Enter drift state
@@ -649,7 +649,7 @@ describe('DriftPhysics - Friction and Speed Loss', () => {
 - [ ] Drift state entered when lateral velocity exceeds threshold
 - [ ] Handbrake state entered immediately when Space pressed
 - [ ] State transitions smooth over 0.2 seconds (no sudden changes)
-- [ ] State-specific friction applied correctly (grip/drift/handbrake)
+- [ ] State-specific friction applied correctly (normal/drift/handbrake)
 - [ ] Speed loss during drift and handbrake noticeable but not excessive
 - [ ] Public API exposes drift angle, state, and lateral velocity
 - [ ] Can initiate drift with sharp turn or handbrake
@@ -697,7 +697,7 @@ This ensures friction changes gradually over 0.2 seconds rather than instantly j
 **Critical Success Factors:**
 1. **Drift Entry Must Feel Natural**: Players should be able to initiate drifts intuitively through sharp turns or handbrake
 2. **Sustained Drift Control**: Players must be able to maintain drifts through continuous steering, not random chance
-3. **Exit Smoothness**: Returning to grip shouldn't feel jarring or cause physics glitches
+3. **Exit Smoothness**: Returning to normal shouldn't feel jarring or cause physics glitches
 4. **Predictability**: Drift behavior should be consistent and learnable
 
 **Common Tuning Issues:**
@@ -708,7 +708,7 @@ This ensures friction changes gradually over 0.2 seconds rather than instantly j
 
 **Problem: Car drifts on every turn**
 - Solution: Raise driftThreshold from 100 to 125 px/s
-- Or: Increase gripFriction to prevent sliding
+- Or: Increase normalFriction to prevent sliding
 
 **Problem: Drift feels "sticky" (hard to exit)**
 - Solution: Shorten transitionTime from 0.2s to 0.15s

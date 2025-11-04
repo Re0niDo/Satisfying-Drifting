@@ -276,8 +276,8 @@ class GameScene extends Phaser.Scene {
 **Core Functionality:**
 - Calculate lateral velocity from car direction vs movement vector
 - Detect drift state when lateral velocity exceeds threshold (100 px/s)
-- Apply friction coefficients based on state (grip: 0.95, drift: 0.7, handbrake: 0.5)
-- Smooth transitions between grip and drift states (0.2s lerp)
+- Apply friction coefficients based on state (normal: 0.95, drift: 0.7, handbrake: 0.5)
+- Smooth transitions between normal and drift states (0.2s lerp)
 - Expose drift angle, speed, and state to other systems
 
 **Dependencies:** Phaser.Physics.Arcade, InputManager
@@ -532,10 +532,10 @@ export const PhysicsConfig = {
         
         // Drift Physics
         driftThreshold: 100,        // lateral velocity (px/s) to enter drift
-        gripFriction: 0.95,         // friction coefficient in normal driving
+        normalFriction: 0.95,       // friction coefficient in normal driving
         driftFriction: 0.7,         // friction coefficient during drift
         handBrakeFriction: 0.5,     // friction coefficient during handbrake
-        transitionTime: 0.2,        // seconds to lerp between grip/drift states
+        transitionTime: 0.2,        // seconds to lerp between normal/drift states
         
         // Speed Loss During Drift
         driftSpeedRetention: 0.95,      // 5% speed loss per second in drift
@@ -647,7 +647,7 @@ export const Tracks: TrackConfig[] = [
 - Use **strict mode** enabled in `tsconfig.json`
 - Define interfaces for all data structures (`ICarState`, `ITrackConfig`, `IDriftData`)
 - **Avoid `any` type** - use `unknown` with type guards if necessary
-- Use enums for game states: `enum GameMode { Practice, Score }`, `enum DriftState { Grip, Drift, Handbrake }`
+- Use enums for game states: `enum GameMode { Practice, Score }`, `enum DriftState { Normal, Drift, Handbrake }`
 - Leverage union types for actions: `type InputAction = 'accelerate' | 'brake' | 'steer' | 'handbrake'`
 
 **Code Organization:**
@@ -1072,7 +1072,7 @@ The implementation is broken down into three phases aligned with the GDD develop
   - Create DriftPhysics system with acceleration/braking
   - Implement steering with velocity-dependent turn rate
   - Add drift state detection (lateral velocity threshold)
-  - Implement friction transitions (grip/drift/handbrake)
+  - Implement friction transitions (normal/drift/handbrake)
 
 - **Epic 2.2: Track System**
   - Create TrackData configuration structure

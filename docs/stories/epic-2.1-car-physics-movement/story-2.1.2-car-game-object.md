@@ -128,7 +128,7 @@ export class Car extends Phaser.GameObjects.Sprite {
             speed: 0,
             lateralVelocity: 0,
             driftAngle: 0,
-            driftState: 'GRIP' as DriftState.Grip,
+            driftState: 'NORMAL' as DriftState.Normal,
             isAccelerating: false,
             isBraking: false,
             isHandbraking: false
@@ -359,7 +359,7 @@ describe('Car', () => {
         expect(state.position.x).toBe(100);
         expect(state.position.y).toBe(100);
         expect(state.speed).toBe(0);
-        expect(state.driftState).toBe(DriftState.Grip);
+        expect(state.driftState).toBe(DriftState.Normal);
     });
     
     it('should update position correctly', () => {

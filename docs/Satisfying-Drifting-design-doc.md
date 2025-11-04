@@ -140,7 +140,7 @@ Top-down 2D car with arcade-style physics tuned for drift satisfaction. The car 
 - **Skill Differentiation:** Beginners can brake to drift, advanced players use handbrake for tighter entries
 
 **Friction Model:**
-- **Grip Mode:** High friction coefficient (0.95) - responsive, tight control
+- **Normal Mode:** High friction coefficient (0.95) - responsive, tight control
 - **Drift Mode:** Lower friction coefficient (0.7) - slides more, wider arcs
 - **Transition:** Smooth lerp between modes over 0.2 seconds
 
@@ -170,7 +170,7 @@ Top-down 2D car with arcade-style physics tuned for drift satisfaction. The car 
 | Turn Rate (Slow) | 360°/s | 240 | 480 | Steering sensitivity when slow |
 | Drift Threshold | 100 px/s | 50 | 200 | Lateral velocity to enter drift |
 | Drift Friction | 0.7 | 0.5 | 0.9 | Traction during drift |
-| Grip Friction | 0.95 | 0.9 | 1.0 | Traction in normal driving |
+| Normal Friction | 0.95 | 0.9 | 1.0 | Traction in normal driving |
 | Handbrake Friction | 0.5 | 0.3 | 0.7 | Traction during handbrake (lower = more slide) |
 | Handbrake Speed Loss | 2% | 0% | 5% | Speed reduction per second while holding handbrake |
 
@@ -816,7 +816,7 @@ class Car extends Phaser.GameObjects.Sprite {
 2. Apply acceleration/braking forces
 3. Apply steering (velocity-dependent)
 4. Calculate lateral velocity (drift detection)
-5. Apply appropriate friction (grip vs drift mode)
+5. Apply appropriate friction (normal vs drift mode)
 6. Update position and rotation
 7. Check track boundaries
 

@@ -10,7 +10,7 @@
 
 ## Description
 
-Implement the DriftPhysics system as a component for the Car game object, focusing on basic movement mechanics: acceleration, braking, and velocity-dependent steering. This story establishes the foundation of car control without drift state transitions - the car will move and steer realistically but remain in "grip" state with normal friction at all times.
+Implement the DriftPhysics system as a component for the Car game object, focusing on basic movement mechanics: acceleration, braking, and velocity-dependent steering. This story establishes the foundation of car control without drift state transitions - the car will move and steer realistically but remain in "normal" state with normal friction at all times.
 
 The DriftPhysics component follows a composition pattern, attaching to the Car object and updating its physics body every frame based on input from InputManager. This creates the tight input-physics-feedback loop that defines the game's feel.
 
@@ -27,7 +27,7 @@ The DriftPhysics component follows a composition pattern, attaching to the Car o
 - [ ] Car brakes when S/Down is held, matching PhysicsConfig.brakeForce
 - [ ] Car steers with velocity-dependent turn rate (faster = wider turns)
 - [ ] Car respects maxSpeed limit defined in PhysicsConfig
-- [ ] Basic friction (grip state only) slows car when no input
+- [ ] Basic friction (normal state only) slows car when no input
 - [ ] Drag and angular drag create natural deceleration
 - [ ] Car can be manually reset to position/rotation via Car.reset()
 
@@ -195,7 +195,7 @@ export class DriftPhysics {
     private forwardVector: Phaser.Math.Vector2;
     
     // Current state (drift mechanics added in Story 2.1.5)
-    private currentState: DriftState = DriftState.Grip;
+    private currentState: DriftState = DriftState.Normal;
     
     /**
      * Create DriftPhysics component
@@ -309,15 +309,15 @@ export class DriftPhysics {
     }
     
     /**
-     * Apply friction (grip state only - drift mechanics in Story 2.1.5)
+     * Apply friction (normal state only - drift mechanics in Story 2.1.5)
      */
     private updateFriction(delta: number): void {
         const config = PhysicsConfig.car;
         
-        // Story 2.1.4: Always use grip friction
-        // Story 2.1.5: Will switch between grip/drift/handbrake friction
+        // Story 2.1.4: Always use normal friction
+        // Story 2.1.5: Will switch between normal/drift/handbrake friction
         this.velocityVector.set(this.body.velocity.x, this.body.velocity.y);
-        MathHelpers.applyFriction(this.velocityVector, config.gripFriction, delta);
+        MathHelpers.applyFriction(this.velocityVector, config.normalFriction, delta);
         this.body.setVelocity(this.velocityVector.x, this.velocityVector.y);
     }
     
@@ -427,7 +427,7 @@ Developers should complete these tasks in order:
 - [ ] Implement constructor accepting Car and InputManager
 - [ ] Store references to car, body, and inputManager
 - [ ] Initialize reusable Vector2 objects (no allocation in update)
-- [ ] Set initial drift state to Grip
+- [ ] Set initial drift state to Normal
 - [ ] Implement destroy() method with reference cleanup
 - [ ] Add JSDoc class documentation
 
@@ -452,7 +452,7 @@ Developers should complete these tasks in order:
 
 ### Task 5: Implement Friction and Drag
 - [ ] Implement updateFriction(delta) method
-- [ ] Apply gripFriction from PhysicsConfig (drift states in Story 2.1.5)
+- [ ] Apply normalFriction from PhysicsConfig (drift states in Story 2.1.5)
 - [ ] Use applyFriction() utility to modify velocity
 - [ ] Implement applyDrag(delta) method
 - [ ] Apply linear drag (air resistance) to velocity
@@ -687,7 +687,7 @@ describe('DriftPhysics', () => {
 **Parameter Tuning:**
 - If acceleration feels sluggish, increase PhysicsConfig.car.acceleration
 - If steering feels unresponsive, increase turnRateLow and turnRateHigh
-- If car slides too much, increase gripFriction
+- If car slides too much, increase normalFriction
 - If car feels too floaty, increase drag
 - Document all parameter changes in story notes
 
@@ -747,7 +747,7 @@ This order matters: applying friction before acceleration would dampen input res
 
 **Future Enhancements (Story 2.1.5):**
 - Drift state detection (lateral velocity threshold)
-- State-specific friction (grip vs drift vs handbrake)
+- State-specific friction (normal vs drift vs handbrake)
 - Smooth state transitions with lerp
 - Speed loss during drift
 - Lateral velocity calculations
