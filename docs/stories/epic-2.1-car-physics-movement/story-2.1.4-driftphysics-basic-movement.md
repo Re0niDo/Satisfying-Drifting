@@ -30,6 +30,7 @@ The DriftPhysics component follows a composition pattern, attaching to the Car o
 - [ ] Basic friction (normal state only) slows car when no input
 - [ ] Drag and angular drag create natural deceleration
 - [ ] Car can be manually reset to position/rotation via Car.reset()
+- [ ] Forward and reverse speed limits configured entirely through PhysicsConfig and enforced via Arcade Body APIs
 
 ### Technical Requirements
 
@@ -40,6 +41,10 @@ The DriftPhysics component follows a composition pattern, attaching to the Car o
 - [ ] No object allocation in update loop (reuse Vector2 instances)
 - [ ] Proper cleanup in destroy() method
 - [ ] JSDoc comments for all public methods and complex calculations
+- [ ] Configures Arcade Body damping/drag with `setDamping` and `setDrag*` (no manual exponential decay)
+- [ ] Sets `body.setMaxSpeed` / `setMaxVelocity` using PhysicsConfig and avoids manual speed clamping
+- [ ] Math helper utilities accept an output vector parameter so update loop does not allocate
+- [ ] Reverse-speed cap computed from velocity dot forward vector (Body.speed is non-negative)
 
 ### Game Design Requirements
 
@@ -49,6 +54,7 @@ The DriftPhysics component follows a composition pattern, attaching to the Car o
 - [ ] Car gradually slows to stop without input (doesn't slide forever)
 - [ ] Max speed feels fast but controllable
 - [ ] Physics parameters are tunable via PhysicsConfig for iteration
+- [ ] Reverse speed limit feels intentional and matches PhysicsConfig.reverseSpeed
 
 ---
 
@@ -154,16 +160,17 @@ export function applyFriction(
 }
 
 /**
- * Get forward vector from rotation angle
+ * Set forward vector from rotation angle without allocating a new Vector2
  * @param angleDegrees - Angle in degrees (0 = right, 90 = down)
- * @returns Unit vector pointing in direction
+ * @param out - Vector to populate (optional, defaults to new Vector2 for convenience)
+ * @returns Reused vector pointing in direction
  */
-export function getForwardVector(angleDegrees: number): Phaser.Math.Vector2 {
+export function getForwardVector(
+    angleDegrees: number,
+    out: Phaser.Math.Vector2 = new Phaser.Math.Vector2()
+): Phaser.Math.Vector2 {
     const angleRad = degToRad(angleDegrees);
-    return new Phaser.Math.Vector2(
-        Math.cos(angleRad),
-        Math.sin(angleRad)
-    );
+    return out.setToPolar(angleRad, 1);
 }
 ```
 
@@ -210,6 +217,13 @@ export class DriftPhysics {
         // Initialize reusable vectors
         this.velocityVector = new Phaser.Math.Vector2();
         this.forwardVector = new Phaser.Math.Vector2();
+
+        const config = PhysicsConfig.car;
+        this.body.setDamping(true);
+        this.body.setDrag(config.drag);
+        this.body.setAngularDrag(config.angularDrag);
+        this.body.setMaxSpeed(config.maxSpeed);
+        this.body.setMaxVelocity(config.maxSpeed, config.maxSpeed);
     }
     
     /**
@@ -218,15 +232,16 @@ export class DriftPhysics {
      */
     public update(delta: number): void {
         const deltaSeconds = delta / 1000;
+        MathHelpers.getForwardVector(this.car.angle, this.forwardVector);
         
         // Update movement
         this.updateAcceleration(deltaSeconds);
         this.updateSteering(deltaSeconds);
         this.updateFriction(deltaSeconds);
-        this.applyDrag(deltaSeconds);
+        this.applyDrag();
         
-        // Enforce max speed
-        this.enforceMaxSpeed();
+        // Enforce speed limits
+        this.enforceReverseSpeed();
     }
     
     /**
@@ -235,15 +250,13 @@ export class DriftPhysics {
     private updateAcceleration(delta: number): void {
         const config = PhysicsConfig.car;
         const accelerationAxis = this.inputManager.getAccelerationAxis();
+        const forwardSpeed = this.body.velocity.dot(this.forwardVector);
         
         if (accelerationAxis === 0) {
             // No acceleration input (coasting)
             return;
         }
-        
-        // Get forward direction vector
-        this.forwardVector.copy(MathHelpers.getForwardVector(this.car.angle));
-        
+
         if (accelerationAxis > 0) {
             // Accelerate forward
             const accelForce = config.acceleration * delta;
@@ -251,9 +264,7 @@ export class DriftPhysics {
             this.body.velocity.y += this.forwardVector.y * accelForce;
         } else {
             // Brake or reverse
-            const currentSpeed = this.body.speed;
-            
-            if (currentSpeed > 5) {
+            if (forwardSpeed > 5) {
                 // Moving forward - apply brake
                 const brakeForce = config.brakeForce * delta;
                 this.body.velocity.x -= this.forwardVector.x * brakeForce;
@@ -322,39 +333,27 @@ export class DriftPhysics {
     }
     
     /**
-     * Apply drag (air resistance)
+     * Sync drag (air resistance) with configuration
      */
-    private applyDrag(delta: number): void {
+    private applyDrag(): void {
         const config = PhysicsConfig.car;
-        
-        // Linear drag
-        const dragFactor = Math.pow(config.drag, delta * 60);
-        this.body.velocity.x *= dragFactor;
-        this.body.velocity.y *= dragFactor;
-        
-        // Angular drag (rotation dampening)
-        const angularDragFactor = Math.pow(config.angularDrag, delta * 60);
-        this.body.angularVelocity *= angularDragFactor;
+        this.body.setDamping(true);
+        this.body.setDrag(config.drag);
+        this.body.setAngularDrag(config.angularDrag);
     }
     
     /**
-     * Enforce maximum speed limit
+     * Enforce reverse speed limit (forward speed is handled by setMaxSpeed)
      */
-    private enforceMaxSpeed(): void {
+    private enforceReverseSpeed(): void {
         const config = PhysicsConfig.car;
-        const currentSpeed = this.body.speed;
+        const forwardSpeed = this.body.velocity.dot(this.forwardVector);
+        const targetReverse = -config.reverseSpeed;
         
-        if (currentSpeed > config.maxSpeed) {
-            const ratio = config.maxSpeed / currentSpeed;
-            this.body.velocity.x *= ratio;
-            this.body.velocity.y *= ratio;
-        }
-        
-        // Allow reverse speed (negative check)
-        if (currentSpeed < -config.reverseSpeed) {
-            const ratio = -config.reverseSpeed / currentSpeed;
-            this.body.velocity.x *= ratio;
-            this.body.velocity.y *= ratio;
+        if (forwardSpeed < targetReverse) {
+            const deltaSpeed = targetReverse - forwardSpeed;
+            this.body.velocity.x += this.forwardVector.x * deltaSpeed;
+            this.body.velocity.y += this.forwardVector.y * deltaSpeed;
         }
     }
     
@@ -418,7 +417,7 @@ Developers should complete these tasks in order:
 - [ ] Implement lerp() for linear interpolation
 - [ ] Implement getVelocityMagnitude() and getVelocityAngle()
 - [ ] Implement applyFriction() that modifies Vector2 in-place
-- [ ] Implement getForwardVector() returning unit vector from angle
+- [ ] Implement getForwardVector(angle, out?) that writes into a provided Vector2 to avoid allocations
 - [ ] Add JSDoc comments with examples for all functions
 - [ ] Write comprehensive unit tests for all math functions
 
@@ -428,17 +427,19 @@ Developers should complete these tasks in order:
 - [ ] Store references to car, body, and inputManager
 - [ ] Initialize reusable Vector2 objects (no allocation in update)
 - [ ] Set initial drift state to Normal
+- [ ] Configure Arcade body with `setDamping(true)`, `setDrag`, `setAngularDrag`, and `setMaxSpeed`
 - [ ] Implement destroy() method with reference cleanup
 - [ ] Add JSDoc class documentation
 
 ### Task 3: Implement Acceleration System
 - [ ] Implement updateAcceleration(delta) method
 - [ ] Get acceleration axis from InputManager (-1, 0, 1)
-- [ ] Calculate forward vector from car rotation
+- [ ] Calculate forward vector once per frame and reuse (no per-call allocations)
 - [ ] Apply acceleration force in forward direction
 - [ ] Implement braking logic (decelerate when moving forward)
 - [ ] Implement reverse logic (accelerate backward when stopped)
 - [ ] Use PhysicsConfig.acceleration and brakeForce values
+- [ ] Use dot product of velocity and forward vector to determine forward vs reverse motion
 - [ ] Verify acceleration feels responsive
 
 ### Task 4: Implement Steering System
@@ -454,17 +455,14 @@ Developers should complete these tasks in order:
 - [ ] Implement updateFriction(delta) method
 - [ ] Apply normalFriction from PhysicsConfig (drift states in Story 2.1.5)
 - [ ] Use applyFriction() utility to modify velocity
-- [ ] Implement applyDrag(delta) method
-- [ ] Apply linear drag (air resistance) to velocity
-- [ ] Apply angular drag (rotation dampening) to angular velocity
-- [ ] Ensure frame-rate independence using delta
+- [ ] Implement applyDrag() method that syncs Arcade body damping/drag with PhysicsConfig
+- [ ] Ensure drag configuration relies on Phaser Body APIs instead of manual velocity scaling
 
 ### Task 6: Implement Speed Limiting
-- [ ] Implement enforceMaxSpeed() method
-- [ ] Check if current speed exceeds maxSpeed
-- [ ] Scale velocity vector to maxSpeed if exceeded
-- [ ] Check if reverse speed exceeds reverseSpeed limit
-- [ ] Verify car can't exceed configured speed limits
+- [ ] Configure `body.setMaxSpeed` / `setMaxVelocity` from PhysicsConfig
+- [ ] Implement enforceReverseSpeed() method using velocity ⋅ forwardVector
+- [ ] Clamp reverse motion to PhysicsConfig.reverseSpeed
+- [ ] Verify forward speed never exceeds maxSpeed without manual clamping
 
 ### Task 7: Implement Main Update Loop
 - [ ] Implement update(delta) method
@@ -472,8 +470,8 @@ Developers should complete these tasks in order:
 - [ ] Call updateAcceleration(delta)
 - [ ] Call updateSteering(delta)
 - [ ] Call updateFriction(delta)
-- [ ] Call applyDrag(delta)
-- [ ] Call enforceMaxSpeed()
+- [ ] Call applyDrag()
+- [ ] Call enforceReverseSpeed()
 - [ ] Verify execution order matters (document why)
 
 ### Task 8: Integrate with Car Object
@@ -493,7 +491,8 @@ Developers should complete these tasks in order:
 - [ ] Test steering changes car rotation
 - [ ] Test turn rate varies with speed
 - [ ] Test friction slows car over time
-- [ ] Test max speed enforcement
+- [ ] Test forward speed respects configured max speed
+- [ ] Test reverse speed clamps at PhysicsConfig.reverseSpeed
 - [ ] Achieve 80%+ test coverage
 
 ### Task 10: Manual Testing & Tuning
@@ -505,6 +504,8 @@ Developers should complete these tasks in order:
 - [ ] Test: Drive at high speed, notice wider turns
 - [ ] Test: Drive slowly, notice tighter turns
 - [ ] Test: Hold W until max speed, verify speed caps
+- [ ] Test: Reverse briefly and confirm car cannot exceed configured reverseSpeed
+- [ ] Test: Release all input and confirm damping/drag feel smooth (no axis jitter)
 - [ ] Tune physics parameters if movement doesn't feel right
 - [ ] Document any parameter changes with rationale
 
@@ -642,13 +643,25 @@ describe('DriftPhysics', () => {
     });
     
     describe('Speed Limiting', () => {
-        it('should enforce max speed', () => {
+        it('should enforce max speed via body.setMaxSpeed', () => {
             const maxSpeed = PhysicsConfig.car.maxSpeed;
             car.body.setVelocity(maxSpeed + 100, 0);
             
             physics.update(16.67);
             
             expect(car.body.speed).toBeLessThanOrEqual(maxSpeed + 1); // Small epsilon
+        });
+        
+        it('should clamp reverse speed using forward dot product', () => {
+            const reverseSpeed = PhysicsConfig.car.reverseSpeed;
+            car.body.setVelocity(-reverseSpeed - 200, 0);
+            car.angle = 180; // Facing left so forwardVector points left
+            
+            physics.update(16.67);
+            
+            const forwardVector = MathHelpers.getForwardVector(car.angle);
+            const forwardSpeed = car.body.velocity.dot(forwardVector);
+            expect(forwardSpeed).toBeGreaterThanOrEqual(-reverseSpeed - 1);
         });
     });
 });
@@ -701,7 +714,9 @@ describe('DriftPhysics', () => {
 - [ ] Car steers left/right based on A/D input
 - [ ] Turn rate varies with speed (tight at low speed, wide at high speed)
 - [ ] Friction slows car when no input applied
-- [ ] Max speed enforcement prevents car from exceeding limits
+- [ ] Max speed enforcement uses Arcade Body `setMaxSpeed` / `setMaxVelocity`
+- [ ] Reverse speed clamped via velocity ⋅ forwardVector logic
+- [ ] Drag/damping configured through Phaser body APIs (no manual scaling)
 - [ ] DriftPhysics integrated with Car object
 - [ ] Car movement feels responsive and controllable
 - [ ] Unit tests achieve 80%+ coverage
@@ -734,14 +749,15 @@ describe('DriftPhysics', () => {
 - Reuse Vector2 objects to avoid garbage collection
 - Minimize trigonometry calls (cache forward vector when possible)
 - Frame-rate independence using delta time
+- Use Phaser Arcade Body APIs (`setDamping`, `setDrag`, `setAngularDrag`) instead of manual velocity math for drag
 - Profile update loop if FPS drops below 60
 
 **Physics Execution Order:**
 1. Acceleration (change velocity based on input)
 2. Steering (change rotation based on input and speed)
 3. Friction (reduce velocity magnitude)
-4. Drag (additional velocity reduction)
-5. Speed limiting (enforce max/min speeds)
+4. Drag (sync Arcade Body damping/drag to config)
+5. Speed limiting (setMaxSpeed for forward, dot-product clamp for reverse)
 
 This order matters: applying friction before acceleration would dampen input responsiveness.
 

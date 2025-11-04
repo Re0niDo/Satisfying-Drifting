@@ -30,6 +30,7 @@ The drift mechanics calculate lateral velocity by comparing the car's heading di
 - [ ] Applies state-specific friction: normal (0.95), drift (0.7), handbrake (0.5)
 - [ ] Implements speed loss during drift (5% per second) and handbrake (2% per second)
 - [ ] Exposes drift angle, speed, and state for other systems (debugging and UI)
+- [ ] Reuses core body configuration from Story 2.1.4 (max speed, drag, reverse clamp)
 
 ### Technical Requirements
 
@@ -40,6 +41,9 @@ The drift mechanics calculate lateral velocity by comparing the car's heading di
 - [ ] Proper lerp implementation for smooth state transitions
 - [ ] Efficient vector math (reuse existing Vector2 objects)
 - [ ] JSDoc comments explain drift physics calculations
+- [ ] Lateral velocity uses dot/cross products with preallocated vectors (no atan2 + sin every frame)
+- [ ] Forward vector is computed once per update and shared across drift calculations
+- [ ] Drag/max-speed enforcement continues to rely on Phaser Body APIs added in Story 2.1.4
 
 ### Game Design Requirements
 
@@ -83,13 +87,15 @@ export class DriftPhysics {
     // Drift calculations
     private lateralVelocity: number = 0;
     private driftAngle: number = 0;
+    private lateralAxis: Phaser.Math.Vector2 = new Phaser.Math.Vector2();
     
     /**
      * Update method now includes drift mechanics
      */
     public update(delta: number): void {
         const deltaSeconds = delta / 1000;
-        
+        MathHelpers.getForwardVector(this.car.angle, this.forwardVector);
+
         // Calculate drift state BEFORE applying physics
         this.updateDriftState(deltaSeconds);
         
@@ -100,10 +106,10 @@ export class DriftPhysics {
         // Apply state-specific friction and speed loss
         this.updateFriction(deltaSeconds);
         this.applySpeedLoss(deltaSeconds);
-        this.applyDrag(deltaSeconds);
+        this.applyDrag();
         
         // Enforce limits
-        this.enforceMaxSpeed();
+        this.enforceReverseSpeed();
     }
     
     /**
@@ -148,24 +154,17 @@ export class DriftPhysics {
      * Calculate lateral velocity (perpendicular to car heading)
      */
     private calculateLateralVelocity(): void {
-        // Get car heading direction
-        const headingAngle = this.car.angle;
-        const headingRad = MathHelpers.degToRad(headingAngle);
+        const velocity = this.body.velocity;
+        const forward = this.forwardVector;
         
-        // Get velocity direction
-        const velocityAngle = MathHelpers.getVelocityAngle(
-            this.body.velocity.x,
-            this.body.velocity.y
-        );
+        // Perpendicular axis (rotate forward 90 degrees without allocating)
+        this.lateralAxis.set(-forward.y, forward.x);
         
-        // Calculate angle difference
-        this.driftAngle = MathHelpers.angleDifference(headingAngle, velocityAngle);
+        const forwardSpeed = velocity.dot(forward);
+        this.lateralVelocity = velocity.dot(this.lateralAxis);
         
-        // Project velocity onto perpendicular axis
-        // Lateral velocity = speed * sin(drift angle)
-        const speed = this.body.speed;
-        const driftAngleRad = MathHelpers.degToRad(this.driftAngle);
-        this.lateralVelocity = speed * Math.sin(driftAngleRad);
+        // Drift angle derived from forward vs lateral components
+        this.driftAngle = Phaser.Math.RadToDeg(Math.atan2(this.lateralVelocity, forwardSpeed));
     }
     
     /**
@@ -330,14 +329,16 @@ Developers should complete these tasks in order:
 - [ ] Add currentState, targetState properties to DriftPhysics
 - [ ] Add stateTransitionProgress property (0-1 lerp progress)
 - [ ] Add lateralVelocity and driftAngle properties
+- [ ] Add reusable lateralAxis Vector2 for perpendicular projections
 - [ ] Initialize all to default values (Normal state, 0 velocity/angle)
 
 ### Task 2: Implement Lateral Velocity Calculation
 - [ ] Implement calculateLateralVelocity() method
 - [ ] Get car heading angle from Car.angle
-- [ ] Get velocity direction using atan2(vy, vx)
-- [ ] Calculate angle difference (drift angle)
-- [ ] Project velocity onto perpendicular axis: speed * sin(drift angle)
+- [ ] Reuse forwardVector from Story 2.1.4 (computed once per update)
+- [ ] Derive perpendicular axis using lateralAxis.set(-forward.y, forward.x)
+- [ ] Project velocity onto forward/perpendicular using Vector2.dot (no new vectors)
+- [ ] Calculate drift angle via `atan2(lateral, forward)` (single trig call)
 - [ ] Store lateralVelocity and driftAngle
 - [ ] Add unit test verifying lateral velocity calculation
 
@@ -386,8 +387,8 @@ Developers should complete these tasks in order:
   3. updateSteering (Story 2.1.4)
   4. updateFriction (now state-aware)
   5. applySpeedLoss (new)
-  6. applyDrag (Story 2.1.4)
-  7. enforceMaxSpeed (Story 2.1.4)
+  6. applyDrag() syncs damping/drag (Story 2.1.4)
+  7. enforceReverseSpeed() (Story 2.1.4 setMaxSpeed already handles forward)
 
 ### Task 9: Implement Public API
 - [ ] Implement getDriftState() returning current state
@@ -406,6 +407,7 @@ Developers should complete these tasks in order:
 - [ ] Test: Friction changes correctly based on state
 - [ ] Test: Speed loss applies during drift and handbrake
 - [ ] Test: getDriftAngle() returns correct value
+- [ ] Test: Speed limiter from Story 2.1.4 remains active during drift states
 - [ ] Achieve 85%+ test coverage on new code
 
 ### Task 11: Manual Testing & Tuning
@@ -416,6 +418,7 @@ Developers should complete these tasks in order:
 - [ ] Test: Drift angle displayed correctly (debug UI)
 - [ ] Test: Can maintain sustained drift through continuous steering
 - [ ] Test: Speed decreases noticeably during long drift
+- [ ] Test: Max forward speed and reverse limits from Story 2.1.4 still apply while drifting
 - [ ] Tune driftThreshold if state transitions feel wrong
 - [ ] Tune friction coefficients if drift slide feels too loose/tight
 - [ ] Document all parameter changes with rationale
@@ -655,6 +658,8 @@ describe('DriftPhysics - Friction and Speed Loss', () => {
 - [ ] Can initiate drift with sharp turn or handbrake
 - [ ] Can maintain sustained drift through steering
 - [ ] Drift mechanics feel satisfying and predictable
+- [ ] Forward/lateral axes reused each frame (no new Vector2 allocations)
+- [ ] Drag/max-speed logic from Story 2.1.4 remains intact (setMaxSpeed + reverse clamp)
 - [ ] Unit tests achieve 85%+ coverage
 - [ ] Manual testing confirms all drift scenarios work
 - [ ] No physics glitches during state transitions
@@ -677,13 +682,14 @@ describe('DriftPhysics - Friction and Speed Loss', () => {
 
 **Drift Physics Math:**
 ```
-Lateral Velocity = Speed * sin(Drift Angle)
-Drift Angle = Heading Angle - Velocity Angle
+forwardSpeed = velocity ⋅ forwardAxis
+lateralVelocity = velocity ⋅ lateralAxis
+driftAngle = atan2(lateralVelocity, forwardSpeed) (convert to degrees)
 
 Where:
-- Heading Angle = direction car is pointing
-- Velocity Angle = direction car is actually moving
-- Drift Angle = difference between the two
+- forwardAxis = normalized heading direction (computed once per update)
+- lateralAxis = perpendicular vector (-forward.y, forward.x) reused each frame
+- velocity = Arcade Body velocity vector
 ```
 
 **State Transition Lerp:**

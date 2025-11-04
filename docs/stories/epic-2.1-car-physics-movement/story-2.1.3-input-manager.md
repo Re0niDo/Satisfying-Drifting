@@ -29,6 +29,7 @@ The InputManager follows the singleton pattern and is registered in the scene re
 - [ ] Provides clean getter methods for all input actions
 - [ ] Registered in scene registry for access by other systems
 - [ ] Properly cleans up keyboard listeners on destroy
+- [ ] Prevents default browser behavior for all mapped keys (Space, arrows, etc.)
 
 ### Technical Requirements
 
@@ -38,6 +39,9 @@ The InputManager follows the singleton pattern and is registered in the scene re
 - [ ] Memory leak prevention: removes all keyboard listeners on destroy
 - [ ] No dependencies on Car or physics systems (pure input handling)
 - [ ] Frame-accurate input detection (polling, not event-based)
+- [ ] Uses Phaser `JustDown` / `JustUp` helpers for single-frame detection
+- [ ] Uses scene time (e.g., `scene.time.now` or update `time` param) for restart cooldown instead of `Date.now()`
+- [ ] Hooks into scene shutdown events to guarantee cleanup even if `destroy()` is not called manually
 
 ### Game Design Requirements
 
@@ -113,6 +117,9 @@ export class InputManager {
         
         this.inputState = this.createInitialState();
         this.keys = this.createKeyObjects();
+
+        // Ensure singleton cleans itself up with the scene
+        this.scene.events.once(Phaser.Scenes.Events.SHUTDOWN, this.destroy, this);
     }
     
     /**
@@ -170,7 +177,7 @@ export class InputManager {
      */
     private createKeyObjects(): typeof this.keys {
         const addKeys = (keyCodes: string[]): Phaser.Input.Keyboard.Key[] => {
-            return keyCodes.map(code => this.keyboard.addKey(code));
+            return keyCodes.map(code => this.keyboard.addKey(code, true));
         };
         
         return {
@@ -187,8 +194,8 @@ export class InputManager {
     /**
      * Update input state (call every frame before physics update)
      */
-    public update(): void {
-        const prevState = { ...this.inputState };
+    public update(time?: number): void {
+        const now = (time ?? this.scene.time.now) || 0;
         
         // Update held states
         this.inputState.accelerate = this.isAnyKeyDown(this.keys.accelerate);
@@ -198,23 +205,20 @@ export class InputManager {
         this.inputState.handbrake = this.isAnyKeyDown(this.keys.handbrake);
         this.inputState.pause = this.isAnyKeyDown(this.keys.pause);
         
-        // Update "pressed this frame" states (transitioned from up to down)
-        this.inputState.acceleratePressed = this.inputState.accelerate && !prevState.accelerate;
-        this.inputState.brakePressed = this.inputState.brake && !prevState.brake;
-        this.inputState.handbrakePressed = this.inputState.handbrake && !prevState.handbrake;
-        this.inputState.pausePressed = this.inputState.pause && !prevState.pause;
+        // Update "pressed this frame" states via Phaser helpers
+        this.inputState.acceleratePressed = this.wasAnyJustDown(this.keys.accelerate);
+        this.inputState.brakePressed = this.wasAnyJustDown(this.keys.brake);
+        this.inputState.handbrakePressed = this.wasAnyJustDown(this.keys.handbrake);
+        this.inputState.pausePressed = this.wasAnyJustDown(this.keys.pause);
         
         // Restart with cooldown buffering
-        const restartDown = this.isAnyKeyDown(this.keys.restart);
-        const timeSinceLastRestart = Date.now() - this.lastRestartTime;
+        const restartJustDown = this.wasAnyJustDown(this.keys.restart);
+        const timeSinceLastRestart = now - this.lastRestartTime;
         
-        if (restartDown && timeSinceLastRestart >= this.restartCooldown) {
+        if (restartJustDown && timeSinceLastRestart >= this.restartCooldown) {
             this.inputState.restart = true;
-            this.inputState.restartPressed = !prevState.restart;
-            
-            if (this.inputState.restartPressed) {
-                this.lastRestartTime = Date.now();
-            }
+            this.inputState.restartPressed = true;
+            this.lastRestartTime = now;
         } else {
             this.inputState.restart = false;
             this.inputState.restartPressed = false;
@@ -226,6 +230,10 @@ export class InputManager {
      */
     private isAnyKeyDown(keys: Phaser.Input.Keyboard.Key[]): boolean {
         return keys.some(key => key.isDown);
+    }
+
+    private wasAnyJustDown(keys: Phaser.Input.Keyboard.Key[]): boolean {
+        return keys.some(key => Phaser.Input.Keyboard.JustDown(key));
     }
     
     // Public getters for input state
@@ -321,6 +329,7 @@ export class InputManager {
         });
         
         // Clear references
+        this.scene.events.off(Phaser.Scenes.Events.SHUTDOWN, this.destroy, this);
         this.scene = null as any;
         this.keyboard = null as any;
     }
@@ -330,7 +339,7 @@ export class InputManager {
 ### Integration Points
 
 - **BootScene**: InputManager instantiated and registered in scene.registry
-- **GameScene**: Calls InputManager.update() every frame before physics
+- **GameScene**: Calls `InputManager.update(time)` every frame before physics so cooldowns follow the scene clock
 - **DriftPhysics**: Will query InputManager for movement input (Story 2.1.4)
 - **InputTypes**: Uses IInputState and IKeyMapping from Story 2.1.1
 
@@ -354,6 +363,7 @@ Developers should complete these tasks in order:
 - [ ] Implement getInstance() static method with lazy initialization
 - [ ] Implement hasInstance() and destroyInstance() static methods
 - [ ] Add singleton instance as private static property
+- [ ] Register a `Phaser.Scenes.Events.SHUTDOWN` listener to auto-destroy the singleton when the scene ends
 - [ ] Verify singleton pattern prevents multiple instances
 
 ### Task 2: Implement Key Registration
@@ -361,13 +371,14 @@ Developers should complete these tasks in order:
 - [ ] Map all InputAction enum values to Phaser key codes
 - [ ] Support multiple keys per action (WASD + Arrows)
 - [ ] Store key objects in structured dictionary
+- [ ] Enable key capture to block default browser behavior for all registered keys
 - [ ] Verify all keys are registered correctly
 
 ### Task 3: Implement Input Polling
 - [ ] Implement update() method to be called every frame
 - [ ] Implement isAnyKeyDown() helper for multi-key support
 - [ ] Update held states for all actions
-- [ ] Calculate "pressed this frame" states by comparing with previous frame
+- [ ] Use Phaser `Keyboard.JustDown` helpers to calculate "pressed this frame" states
 - [ ] Verify input detection is frame-accurate
 
 ### Task 4: Implement Restart Buffering
@@ -375,6 +386,7 @@ Developers should complete these tasks in order:
 - [ ] Implement cooldown logic in update() for restart key
 - [ ] Prevent restart spam by enforcing 300ms cooldown
 - [ ] Test restart buffering manually
+- [ ] Use scene time or update `time` argument rather than `Date.now()` so cooldown matches the game clock
 - [ ] Verify restart only triggers once per cooldown period
 
 ### Task 5: Implement Public API
@@ -384,6 +396,7 @@ Developers should complete these tasks in order:
 - [ ] Implement wasPressed(action) for frame-specific input
 - [ ] Implement getState() returning readonly copy of state
 - [ ] Implement reset() method to clear all input
+- [ ] Add helper(s) (e.g., `wasAnyJustDown`) to keep Phaser-specific polling logic isolated
 - [ ] Add JSDoc comments for all public methods
 
 ### Task 6: Integrate with BootScene
@@ -394,7 +407,7 @@ Developers should complete these tasks in order:
 
 ### Task 7: Integrate with GameScene
 - [ ] Modify `src/scenes/GameScene.ts` to retrieve InputManager from registry
-- [ ] Call inputManager.update() at start of GameScene.update()
+- [ ] Call `inputManager.update(time)` at start of `GameScene.update()`
 - [ ] Add debug logging to console showing current input state
 - [ ] Verify input updates every frame
 - [ ] Test all keys and verify console output
@@ -421,6 +434,7 @@ Developers should complete these tasks in order:
 - [ ] Press R twice rapidly - verify only one restart triggers
 - [ ] Press ESC - verify pause = true in console
 - [ ] Verify input feels responsive (no lag)
+- [ ] Confirm browser window does not scroll or lose focus while pressing Space or Arrow keys
 
 ---
 
@@ -613,6 +627,8 @@ describe('InputManager Restart Buffering', () => {
 - [ ] Unit tests achieve 85%+ coverage
 - [ ] Manual testing confirms all keys work and feel responsive
 - [ ] No memory leaks when destroying InputManager
+- [ ] Scene shutdown event destroys singleton without manual intervention
+- [ ] No browser default actions triggered by registered keys
 - [ ] TypeScript compiles with zero errors in strict mode
 - [ ] ESLint passes with zero warnings
 - [ ] Code reviewed and approved
@@ -633,16 +649,18 @@ describe('InputManager Restart Buffering', () => {
 - Accessible from any scene without passing references
 - Scene registry provides global access point
 - Easy to mock for testing
+- Scene shutdown listener guarantees cleanup even if consumers forget to call `destroy()`
 
 **Frame-Accurate Input:**
 - Polling (not events) ensures input checked every frame
 - Critical for responsive car controls at 60 FPS
-- "Pressed this frame" state enables single-frame actions (restart, pause)
+- "Pressed this frame" state enables single-frame actions (restart, pause) using Phaser `JustDown` helpers tied to the keyboard plugin update
 
 **Input Buffering:**
 - Restart cooldown prevents accidental scene reload spam
 - 300ms cooldown is barely noticeable but prevents rapid double-taps
 - Pause has no cooldown (instant response expected)
+- Cooldown uses the Phaser scene clock, keeping behavior stable during slow motion, pause, or replay scenarios
 
 **Future Enhancements:**
 - Gamepad support (Xbox/PlayStation controllers)
