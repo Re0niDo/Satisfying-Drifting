@@ -112,24 +112,50 @@ class Sprite {
     this.texture = { key: texture };
     
     // Mock physics body
+    const createVelocityObject = () => ({
+      x: 0, 
+      y: 0, 
+      dot: function(this: any, v: any) { return this.x * v.x + this.y * v.y; },
+      clone: function(this: any) { 
+        const obj = createVelocityObject();
+        obj.x = this.x;
+        obj.y = this.y;
+        return obj;
+      },
+      subtract: function(this: any, v: any) {
+        const obj = createVelocityObject();
+        obj.x = this.x - v.x;
+        obj.y = this.y - v.y;
+        return obj;
+      },
+      length: function(this: any) { return globalThis.Math.sqrt(this.x * this.x + this.y * this.y); }
+    });
+    
     this.body = {
-      velocity: { x: 0, y: 0 },
+      velocity: createVelocityObject(),
       speed: 0,
+      useDamping: false,
+      drag: { x: 0, y: 0 },
+      angularDrag: 0,
+      maxSpeed: 0,
       setSize: jest.fn(),
       setCollideWorldBounds: jest.fn(),
-      setDrag: jest.fn(),
-      setAngularDrag: jest.fn(),
+      setDrag: jest.fn(function(this: any, drag: number) { this.drag.x = drag; this.drag.y = drag; }),
+      setAngularDrag: jest.fn(function(this: any, drag: number) { this.angularDrag = drag; }),
       setBounce: jest.fn(),
       setMaxVelocity: jest.fn(),
-      reset: jest.fn((x: number, y: number) => {
-        this.x = x;
-        this.y = y;
-        this.body.velocity = { x: 0, y: 0 };
-        this.body.speed = 0;
+      setMaxSpeed: jest.fn(function(this: any, speed: number) { this.maxSpeed = speed; }),
+      setDamping: jest.fn(function(this: any, damping: boolean) { this.useDamping = damping; }),
+      reset: jest.fn(function(this: any, x: number, y: number) {
+        (this as any).x = x;
+        (this as any).y = y;
+        this.velocity = createVelocityObject();
+        this.speed = 0;
       }),
-      setVelocity: jest.fn((x: number, y: number) => {
-        this.body.velocity = { x, y };
-        this.body.speed = Math.sqrt(x * x + y * y);
+      setVelocity: jest.fn(function(this: any, x: number, y: number) {
+        this.velocity.x = x;
+        this.velocity.y = y;
+        this.speed = globalThis.Math.sqrt(x * x + y * y);
       }),
       setAngularVelocity: jest.fn(),
     };
@@ -330,16 +356,27 @@ const Core = {
 const Physics = {
   Arcade: {
     Body: class {
-      velocity = { x: 0, y: 0 };
+      velocity = { x: 0, y: 0, dot: (_v: any) => 0 };
       speed = 0;
+      useDamping = false;
+      drag = { x: 0, y: 0 };
+      angularDrag = 0;
+      maxSpeed = 0;
       setSize = jest.fn();
       setCollideWorldBounds = jest.fn();
-      setDrag = jest.fn();
-      setAngularDrag = jest.fn();
+      setDrag = jest.fn((drag: number) => { this.drag.x = drag; this.drag.y = drag; });
+      setAngularDrag = jest.fn((drag: number) => { this.angularDrag = drag; });
       setBounce = jest.fn();
       setMaxVelocity = jest.fn();
+      setMaxSpeed = jest.fn((speed: number) => { this.maxSpeed = speed; });
+      setDamping = jest.fn((damping: boolean) => { this.useDamping = damping; });
       reset = jest.fn();
-      setVelocity = jest.fn();
+      setVelocity = jest.fn((x: number, y: number) => {
+        this.velocity.x = x;
+        this.velocity.y = y;
+        this.speed = globalThis.Math.sqrt(x * x + y * y);
+        this.velocity.dot = (v: any) => x * v.x + y * v.y;
+      });
       setAngularVelocity = jest.fn();
     },
   },
@@ -358,7 +395,62 @@ const Input = {
   },
 };
 
+class Vector2 {
+  constructor(public x: number = 0, public y: number = 0) {}
+  
+  set(x: number, y: number): this {
+    this.x = x;
+    this.y = y;
+    return this;
+  }
+  
+  clone(): Vector2 {
+    return new Vector2(this.x, this.y);
+  }
+  
+  subtract(v: Vector2): Vector2 {
+    return new Vector2(this.x - v.x, this.y - v.y);
+  }
+  
+  dot(v: Vector2): number {
+    return this.x * v.x + this.y * v.y;
+  }
+  
+  length(): number {
+    return globalThis.Math.sqrt(this.x * this.x + this.y * this.y);
+  }
+  
+  setToPolar(angle: number, magnitude: number = 1): this {
+    this.x = globalThis.Math.cos(angle) * magnitude;
+    this.y = globalThis.Math.sin(angle) * magnitude;
+    return this;
+  }
+}
+
+const PhaserMath = {
+  Vector2,
+  Clamp: (value: number, min: number, max: number) => {
+    return value < min ? min : value > max ? max : value;
+  },
+};
+
+class Game {
+  constructor(config: any) {
+    // Mock game initialization
+    if (config.callbacks && config.callbacks.postBoot) {
+      setTimeout(() => config.callbacks.postBoot(this), 0);
+    }
+  }
+  
+  scene = {
+    scenes: [new Scene({ key: 'MockScene' })],
+  };
+  
+  destroy = jest.fn();
+}
+
 const PhaserMock = {
+  Game,
   Scene,
   GameObjects,
   Sound,
@@ -366,6 +458,7 @@ const PhaserMock = {
   Physics,
   Scenes,
   Input,
+  Math: PhaserMath,
   HEADLESS: 0,
 };
 

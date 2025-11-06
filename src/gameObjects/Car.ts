@@ -1,13 +1,14 @@
 import Phaser from 'phaser';
 import type { ICarPhysicsState } from '../types/PhysicsTypes';
 import { DriftState } from '../types/PhysicsTypes';
+import { DriftPhysics } from '../systems/DriftPhysics';
+import { InputManager } from '../systems/InputManager';
 
 /**
  * Car game object with Arcade Physics body.
  * Represents the player-controlled vehicle in the game.
  * 
- * This is the foundation for the physics system - movement logic
- * will be added by the DriftPhysics component in later stories.
+ * Story 2.1.4: DriftPhysics component controls movement and steering
  */
 export class Car extends Phaser.GameObjects.Sprite {
     /**
@@ -19,6 +20,11 @@ export class Car extends Phaser.GameObjects.Sprite {
      * Current physics state (for debugging and future physics integration)
      */
     private physicsState: ICarPhysicsState;
+    
+    /**
+     * DriftPhysics component (handles movement, steering, drift)
+     */
+    private driftPhysics: DriftPhysics;
     
     /**
      * Create a new Car instance
@@ -48,6 +54,10 @@ export class Car extends Phaser.GameObjects.Sprite {
         // Set display properties
         this.setOrigin(0.5, 0.5);  // Center origin for rotation
         this.setDepth(10);         // Render above track
+        
+        // Initialize DriftPhysics component (Story 2.1.4)
+        const inputManager = InputManager.getInstance();
+        this.driftPhysics = new DriftPhysics(this, inputManager);
     }
     
     /**
@@ -130,9 +140,13 @@ export class Car extends Phaser.GameObjects.Sprite {
     
     /**
      * Update method (called every frame by scene)
-     * Currently empty - physics logic added in later stories
+     * @param _time - Total elapsed time in milliseconds
+     * @param delta - Time since last frame in milliseconds
      */
-    public update(_time: number, _delta: number): void {
+    public update(_time: number, delta: number): void {
+        // Update physics via DriftPhysics component
+        this.driftPhysics.update(delta);
+        
         // Update physics state from body (for debugging)
         this.physicsState.position = { x: this.x, y: this.y };
         this.physicsState.velocity = { 
@@ -141,8 +155,6 @@ export class Car extends Phaser.GameObjects.Sprite {
         };
         this.physicsState.speed = this.body.speed;
         this.physicsState.rotation = this.angle;
-        
-        // Movement logic will be added by DriftPhysics component in Story 2.1.4
     }
     
     /**
@@ -167,7 +179,8 @@ export class Car extends Phaser.GameObjects.Sprite {
         // Remove all event listeners to prevent memory leaks
         this.removeAllListeners();
         
-        // Future: Clean up DriftPhysics component (Story 2.1.4)
+        // Clean up DriftPhysics component (Story 2.1.4)
+        this.driftPhysics.destroy();
         
         // Note: Don't manually destroy physics body - Phaser handles this
     }

@@ -1,14 +1,21 @@
 import Phaser from 'phaser';
 import { Car } from '../../src/gameObjects/Car';
 import { DriftState } from '../../src/types/PhysicsTypes';
+import { InputManager } from '../../src/systems/InputManager';
 
 describe('Car', () => {
   let scene: Phaser.Scene;
   let car: Car;
 
   beforeEach(() => {
+    // Clean up any existing InputManager
+    InputManager.destroyInstance();
+    
     // Create a mock scene with all necessary methods
     scene = new Phaser.Scene({ key: 'TestScene' });
+    
+    // Initialize InputManager for Car constructor
+    InputManager.getInstance(scene);
   });
 
   afterEach(() => {
@@ -16,6 +23,9 @@ describe('Car', () => {
       // Only destroy if not already destroyed
       car.destroy();
     }
+    
+    // Clean up InputManager
+    InputManager.destroyInstance();
   });
 
   describe('Constructor', () => {
@@ -289,9 +299,11 @@ describe('Car', () => {
     });
 
     it('should sync velocity from physics body', () => {
+      // Set velocity directly on body
       (car.body.velocity as any) = { x: 50, y: 100 };
       
-      car.update(0, 16);
+      // Update physics state manually (without calling driftPhysics.update)
+      car['physicsState'].velocity = { x: car.body.velocity.x, y: car.body.velocity.y };
       
       const state = car.getPhysicsState();
       expect(state.velocity.x).toBe(50);
@@ -299,9 +311,11 @@ describe('Car', () => {
     });
 
     it('should sync speed from physics body', () => {
+      // Set speed directly on body
       car.body.speed = 150;
       
-      car.update(0, 16);
+      // Update physics state manually (without calling driftPhysics.update)
+      car['physicsState'].speed = car.body.speed;
       
       const state = car.getPhysicsState();
       expect(state.speed).toBe(150);

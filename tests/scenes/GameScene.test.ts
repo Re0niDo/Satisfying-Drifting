@@ -2,6 +2,7 @@ jest.mock('phaser');
 
 import { GameScene } from '../../src/scenes/GameScene';
 import type { GameSceneData } from '../../src/types/SceneData';
+import { InputManager } from '../../src/systems/InputManager';
 
 // Mock InputManager for tests
 const mockInputManager = {
@@ -35,11 +36,23 @@ describe('GameScene', () => {
   let scene: GameScene;
 
   beforeEach(() => {
+    // Clean up any existing InputManager
+    InputManager.destroyInstance();
+    
     scene = new GameScene();
+    
+    // Initialize InputManager before adding mock
+    InputManager.getInstance(scene);
+    
     // Add mock InputManager to scene registry
     scene.registry.set('inputManager', mockInputManager);
     // Reset mock call counts
     jest.clearAllMocks();
+  });
+  
+  afterEach(() => {
+    // Clean up InputManager
+    InputManager.destroyInstance();
   });
 
   describe('Scene Initialization', () => {
