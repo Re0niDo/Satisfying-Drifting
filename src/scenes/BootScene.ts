@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import type { BootSceneData, PreloadSceneData } from '../types/SceneData';
 import { isDevEnvironment } from '../utils/env';
+import { InputManager } from '../systems/InputManager';
 
 /**
  * BootScene - First scene in the game lifecycle
@@ -81,6 +82,14 @@ export class BootScene extends Phaser.Scene {
     // Example:
     // const audioManager = new AudioManager(this);
     // this.registry.set('audioManager', audioManager);
+
+    // Initialize InputManager singleton and register in scene registry
+    const inputManager = InputManager.getInstance(this);
+    this.registry.set('inputManager', inputManager);
+    
+    if (isDevEnvironment()) {
+      console.log('[BootScene] InputManager initialized and registered');
+    }
 
     // Optional: Display logo with quick fade effect (configurable)
     const showLogo = false; // Set to true when logo asset is available

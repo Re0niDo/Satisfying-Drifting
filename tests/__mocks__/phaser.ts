@@ -10,6 +10,34 @@ const createRegistry = () => {
   };
 };
 
+const createEventEmitter = () => {
+  const listeners = new Map<string, Function[]>();
+
+  return {
+    on: jest.fn((event: string, fn: Function) => {
+      if (!listeners.has(event)) {
+        listeners.set(event, []);
+      }
+      listeners.get(event)!.push(fn);
+    }),
+    once: jest.fn((event: string, fn: Function) => {
+      if (!listeners.has(event)) {
+        listeners.set(event, []);
+      }
+      listeners.get(event)!.push(fn);
+    }),
+    off: jest.fn((event: string, fn: Function) => {
+      const eventListeners = listeners.get(event);
+      if (eventListeners) {
+        const index = eventListeners.indexOf(fn);
+        if (index !== -1) {
+          eventListeners.splice(index, 1);
+        }
+      }
+    }),
+  };
+};
+
 class Text {
   public text: string;
   public style: Record<string, unknown>;
@@ -151,6 +179,7 @@ class Sprite {
 class Scene {
   public sys: { settings: { key: string } };
   public registry = createRegistry();
+  public events = createEventEmitter();
   public tweens = {
     killAll: jest.fn(),
     add: jest.fn(),
@@ -203,6 +232,11 @@ class Scene {
     keyboard: {
       on: jest.fn(),
       removeAllListeners: jest.fn(),
+      addKey: jest.fn((code: string, _enableCapture?: boolean) => ({
+        keyCode: code.charCodeAt(0),
+        isDown: false,
+      })),
+      removeKey: jest.fn(),
     },
   };
   public cameras: { main: {
@@ -311,12 +345,27 @@ const Physics = {
   },
 };
 
+const Scenes = {
+  Events: {
+    SHUTDOWN: 'shutdown',
+  },
+};
+
+const Input = {
+  Keyboard: {
+    JustDown: jest.fn(),
+    JustUp: jest.fn(),
+  },
+};
+
 const PhaserMock = {
   Scene,
   GameObjects,
   Sound,
   Core,
   Physics,
+  Scenes,
+  Input,
   HEADLESS: 0,
 };
 

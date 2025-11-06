@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import type { GameSceneData, MenuSceneData } from '../types/SceneData';
 import { isDevEnvironment } from '../utils/env';
 import { Car } from '../gameObjects/Car';
+import { InputManager } from '../systems/InputManager';
 
 /**
  * GameScene - Main gameplay scene
@@ -18,6 +19,7 @@ export class GameScene extends Phaser.Scene {
 
   // Game objects
   private car?: Car;
+  private inputManager?: InputManager;
 
   // Text display objects
   private trackText?: Phaser.GameObjects.Text;
@@ -67,6 +69,15 @@ export class GameScene extends Phaser.Scene {
    */
   create(): void {
     const { width, height } = this.cameras.main;
+
+    // Retrieve InputManager from scene registry (initialized in BootScene)
+    this.inputManager = this.registry.get('inputManager') as InputManager;
+    
+    if (!this.inputManager) {
+      console.error('[GameScene] InputManager not found in registry');
+    } else if (isDevEnvironment()) {
+      console.log('[GameScene] InputManager retrieved from registry');
+    }
 
     // Create placeholder car sprite texture (32x48px red rectangle)
     this.createPlaceholderCarTexture();
@@ -228,13 +239,37 @@ export class GameScene extends Phaser.Scene {
 
   /**
    * Main game loop - currently empty placeholder for Phase 2
-   * @param _time - Current timestamp
-   * @param _delta - Time elapsed since last frame
+   * @param time - Current timestamp
+   * @param delta - Time elapsed since last frame
    */
-  update(_time: number, _delta: number): void {
+  update(time: number, delta: number): void {
+    // Update InputManager every frame
+    if (this.inputManager) {
+      this.inputManager.update(time);
+      
+      // Debug logging of input state in development mode
+      if (isDevEnvironment()) {
+        const state = this.inputManager.getState();
+        const steeringAxis = this.inputManager.getSteeringAxis();
+        const accelAxis = this.inputManager.getAccelerationAxis();
+        
+        // Only log when there's actual input to reduce console spam
+        if (state.accelerate || state.brake || state.steerLeft || state.steerRight || 
+            state.handbrake || state.restart || state.pause) {
+          console.log('[GameScene] Input State:', {
+            steering: steeringAxis,
+            acceleration: accelAxis,
+            handbrake: state.handbrake,
+            restart: state.restart,
+            pause: state.pause
+          });
+        }
+      }
+    }
+
     // Update car if it exists
     if (this.car) {
-      this.car.update(_time, _delta);
+      this.car.update(time, delta);
     }
 
     // Empty game loop placeholder

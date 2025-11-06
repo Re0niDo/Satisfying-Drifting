@@ -3,11 +3,43 @@ jest.mock('phaser');
 import { GameScene } from '../../src/scenes/GameScene';
 import type { GameSceneData } from '../../src/types/SceneData';
 
+// Mock InputManager for tests
+const mockInputManager = {
+  update: jest.fn(),
+  getState: jest.fn(() => ({
+    accelerate: false,
+    brake: false,
+    steerLeft: false,
+    steerRight: false,
+    handbrake: false,
+    restart: false,
+    pause: false,
+    acceleratePressed: false,
+    brakePressed: false,
+    handbrakePressed: false,
+    restartPressed: false,
+    pausePressed: false,
+  })),
+  getSteeringAxis: jest.fn(() => 0),
+  getAccelerationAxis: jest.fn(() => 0),
+  isAccelerating: jest.fn(() => false),
+  isBraking: jest.fn(() => false),
+  isSteeringLeft: jest.fn(() => false),
+  isSteeringRight: jest.fn(() => false),
+  isHandbraking: jest.fn(() => false),
+  isRestarting: jest.fn(() => false),
+  isPausing: jest.fn(() => false),
+};
+
 describe('GameScene', () => {
   let scene: GameScene;
 
   beforeEach(() => {
     scene = new GameScene();
+    // Add mock InputManager to scene registry
+    scene.registry.set('inputManager', mockInputManager);
+    // Reset mock call counts
+    jest.clearAllMocks();
   });
 
   describe('Scene Initialization', () => {

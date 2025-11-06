@@ -4,7 +4,7 @@
 **Story ID:** 2.1.3  
 **Priority:** High  
 **Points:** 3  
-**Status:** Draft
+**Status:** Complete
 
 ---
 
@@ -22,34 +22,34 @@ The InputManager follows the singleton pattern and is registered in the scene re
 
 ### Functional Requirements
 
-- [ ] InputManager singleton can be instantiated once and accessed globally
-- [ ] Polls keyboard input every frame (WASD, Arrows, Space, R, ESC)
-- [ ] Tracks key states: pressed this frame, currently held, released this frame
-- [ ] Implements input buffering for R key (prevents accidental double-restart)
-- [ ] Provides clean getter methods for all input actions
-- [ ] Registered in scene registry for access by other systems
-- [ ] Properly cleans up keyboard listeners on destroy
-- [ ] Prevents default browser behavior for all mapped keys (Space, arrows, etc.)
+- [x] InputManager singleton can be instantiated once and accessed globally
+- [x] Polls keyboard input every frame (WASD, Arrows, Space, R, ESC)
+- [x] Tracks key states: pressed this frame, currently held, released this frame
+- [x] Implements input buffering for R key (prevents accidental double-restart)
+- [x] Provides clean getter methods for all input actions
+- [x] Registered in scene registry for access by other systems
+- [x] Properly cleans up keyboard listeners on destroy
+- [x] Prevents default browser behavior for all mapped keys (Space, arrows, etc.)
 
 ### Technical Requirements
 
-- [ ] Code follows TypeScript strict mode standards
-- [ ] Uses IInputState and IKeyMapping interfaces from Story 2.1.1
-- [ ] Implements singleton pattern with private constructor
-- [ ] Memory leak prevention: removes all keyboard listeners on destroy
-- [ ] No dependencies on Car or physics systems (pure input handling)
-- [ ] Frame-accurate input detection (polling, not event-based)
-- [ ] Uses Phaser `JustDown` / `JustUp` helpers for single-frame detection
-- [ ] Uses scene time (e.g., `scene.time.now` or update `time` param) for restart cooldown instead of `Date.now()`
-- [ ] Hooks into scene shutdown events to guarantee cleanup even if `destroy()` is not called manually
+- [x] Code follows TypeScript strict mode standards
+- [x] Uses IInputState and IKeyMapping interfaces from Story 2.1.1
+- [x] Implements singleton pattern with private constructor
+- [x] Memory leak prevention: removes all keyboard listeners on destroy
+- [x] No dependencies on Car or physics systems (pure input handling)
+- [x] Frame-accurate input detection (polling, not event-based)
+- [x] Uses Phaser `JustDown` / `JustUp` helpers for single-frame detection
+- [x] Uses scene time (e.g., `scene.time.now` or update `time` param) for restart cooldown instead of `Date.now()`
+- [x] Hooks into scene shutdown events to guarantee cleanup even if `destroy()` is not called manually
 
 ### Game Design Requirements
 
-- [ ] WASD and Arrow keys both work for movement (accessibility)
-- [ ] Space bar triggers handbrake (easily accessible during driving)
-- [ ] R key requires 300ms cooldown between restarts (prevent spam)
-- [ ] ESC key for pause works immediately without buffering
-- [ ] Input response feels instant (< 16ms latency at 60 FPS)
+- [x] WASD and Arrow keys both work for movement (accessibility)
+- [x] Space bar triggers handbrake (easily accessible during driving)
+- [x] R key requires 300ms cooldown between restarts (prevent spam)
+- [x] ESC key for pause works immediately without buffering
+- [x] Input response feels instant (< 16ms latency at 60 FPS)
 
 ---
 
@@ -358,83 +358,83 @@ export class InputManager {
 Developers should complete these tasks in order:
 
 ### Task 1: Implement InputManager Singleton
-- [ ] Create `src/systems/InputManager.ts` file
-- [ ] Implement private constructor with scene and optional key mapping
-- [ ] Implement getInstance() static method with lazy initialization
-- [ ] Implement hasInstance() and destroyInstance() static methods
-- [ ] Add singleton instance as private static property
-- [ ] Register a `Phaser.Scenes.Events.SHUTDOWN` listener to auto-destroy the singleton when the scene ends
-- [ ] Verify singleton pattern prevents multiple instances
+- [x] Create `src/systems/InputManager.ts` file
+- [x] Implement private constructor with scene and optional key mapping
+- [x] Implement getInstance() static method with lazy initialization
+- [x] Implement hasInstance() and destroyInstance() static methods
+- [x] Add singleton instance as private static property
+- [x] Register a `Phaser.Scenes.Events.SHUTDOWN` listener to auto-destroy the singleton when the scene ends
+- [x] Verify singleton pattern prevents multiple instances
 
 ### Task 2: Implement Key Registration
-- [ ] Implement createKeyObjects() method using keyboard.addKey()
-- [ ] Map all InputAction enum values to Phaser key codes
-- [ ] Support multiple keys per action (WASD + Arrows)
-- [ ] Store key objects in structured dictionary
-- [ ] Enable key capture to block default browser behavior for all registered keys
-- [ ] Verify all keys are registered correctly
+- [x] Implement createKeyObjects() method using keyboard.addKey()
+- [x] Map all InputAction enum values to Phaser key codes
+- [x] Support multiple keys per action (WASD + Arrows)
+- [x] Store key objects in structured dictionary
+- [x] Enable key capture to block default browser behavior for all registered keys
+- [x] Verify all keys are registered correctly
 
 ### Task 3: Implement Input Polling
-- [ ] Implement update() method to be called every frame
-- [ ] Implement isAnyKeyDown() helper for multi-key support
-- [ ] Update held states for all actions
-- [ ] Use Phaser `Keyboard.JustDown` helpers to calculate "pressed this frame" states
-- [ ] Verify input detection is frame-accurate
+- [x] Implement update() method to be called every frame
+- [x] Implement isAnyKeyDown() helper for multi-key support
+- [x] Update held states for all actions
+- [x] Use Phaser `Keyboard.JustDown` helpers to calculate "pressed this frame" states
+- [x] Verify input detection is frame-accurate
 
 ### Task 4: Implement Restart Buffering
-- [ ] Add lastRestartTime and restartCooldown properties
-- [ ] Implement cooldown logic in update() for restart key
-- [ ] Prevent restart spam by enforcing 300ms cooldown
-- [ ] Test restart buffering manually
-- [ ] Use scene time or update `time` argument rather than `Date.now()` so cooldown matches the game clock
-- [ ] Verify restart only triggers once per cooldown period
+- [x] Add lastRestartTime and restartCooldown properties
+- [x] Implement cooldown logic in update() for restart key
+- [x] Prevent restart spam by enforcing 300ms cooldown
+- [x] Test restart buffering manually
+- [x] Use scene time or update `time` argument rather than `Date.now()` so cooldown matches the game clock
+- [x] Verify restart only triggers once per cooldown period
 
 ### Task 5: Implement Public API
-- [ ] Implement all getter methods (isAccelerating, isBraking, etc.)
-- [ ] Implement getSteeringAxis() returning -1, 0, or 1
-- [ ] Implement getAccelerationAxis() returning -1, 0, or 1
-- [ ] Implement wasPressed(action) for frame-specific input
-- [ ] Implement getState() returning readonly copy of state
-- [ ] Implement reset() method to clear all input
-- [ ] Add helper(s) (e.g., `wasAnyJustDown`) to keep Phaser-specific polling logic isolated
-- [ ] Add JSDoc comments for all public methods
+- [x] Implement all getter methods (isAccelerating, isBraking, etc.)
+- [x] Implement getSteeringAxis() returning -1, 0, or 1
+- [x] Implement getAccelerationAxis() returning -1, 0, or 1
+- [x] Implement wasPressed(action) for frame-specific input
+- [x] Implement getState() returning readonly copy of state
+- [x] Implement reset() method to clear all input
+- [x] Add helper(s) (e.g., `wasAnyJustDown`) to keep Phaser-specific polling logic isolated
+- [x] Add JSDoc comments for all public methods
 
 ### Task 6: Integrate with BootScene
-- [ ] Modify `src/scenes/BootScene.ts` to instantiate InputManager
-- [ ] Register InputManager in scene.registry with key 'inputManager'
-- [ ] Verify InputManager persists across scene transitions
-- [ ] Test InputManager accessible from GameScene
+- [x] Modify `src/scenes/BootScene.ts` to instantiate InputManager
+- [x] Register InputManager in scene.registry with key 'inputManager'
+- [x] Verify InputManager persists across scene transitions
+- [x] Test InputManager accessible from GameScene
 
 ### Task 7: Integrate with GameScene
-- [ ] Modify `src/scenes/GameScene.ts` to retrieve InputManager from registry
-- [ ] Call `inputManager.update(time)` at start of `GameScene.update()`
-- [ ] Add debug logging to console showing current input state
-- [ ] Verify input updates every frame
-- [ ] Test all keys and verify console output
+- [x] Modify `src/scenes/GameScene.ts` to retrieve InputManager from registry
+- [x] Call `inputManager.update(time)` at start of `GameScene.update()`
+- [x] Add debug logging to console showing current input state
+- [x] Verify input updates every frame
+- [x] Test all keys and verify console output
 
 ### Task 8: Write Unit Tests
-- [ ] Create `tests/systems/InputManager.test.ts` file
-- [ ] Test: Singleton pattern enforces single instance
-- [ ] Test: getInstance() requires scene on first call
-- [ ] Test: All keys are registered correctly
-- [ ] Test: Input state updates correctly when keys pressed
-- [ ] Test: "Pressed this frame" detection works correctly
-- [ ] Test: Restart cooldown prevents spam
-- [ ] Test: getSteeringAxis() returns correct values
-- [ ] Test: destroy() cleans up keyboard listeners
-- [ ] Achieve 85%+ test coverage
+- [x] Create `tests/systems/InputManager.test.ts` file
+- [x] Test: Singleton pattern enforces single instance
+- [x] Test: getInstance() requires scene on first call
+- [x] Test: All keys are registered correctly
+- [x] Test: Input state updates correctly when keys pressed
+- [x] Test: "Pressed this frame" detection works correctly
+- [x] Test: Restart cooldown prevents spam
+- [x] Test: getSteeringAxis() returns correct values
+- [x] Test: destroy() cleans up keyboard listeners
+- [x] Achieve 85%+ test coverage
 
 ### Task 9: Manual Testing
-- [ ] Run game and open browser console
-- [ ] Press W/Up - verify accelerate = true in console
-- [ ] Press S/Down - verify brake = true in console
-- [ ] Press A/Left - verify steerLeft = true in console
-- [ ] Press D/Right - verify steerRight = true in console
-- [ ] Press Space - verify handbrake = true in console
-- [ ] Press R twice rapidly - verify only one restart triggers
-- [ ] Press ESC - verify pause = true in console
-- [ ] Verify input feels responsive (no lag)
-- [ ] Confirm browser window does not scroll or lose focus while pressing Space or Arrow keys
+- [x] Run game and open browser console
+- [x] Press W/Up - verify accelerate = true in console
+- [x] Press S/Down - verify brake = true in console
+- [x] Press A/Left - verify steerLeft = true in console
+- [x] Press D/Right - verify steerRight = true in console
+- [x] Press Space - verify handbrake = true in console
+- [x] Press R twice rapidly - verify only one restart triggers
+- [x] Press ESC - verify pause = true in console
+- [x] Verify input feels responsive (no lag)
+- [x] Confirm browser window does not scroll or lose focus while pressing Space or Arrow keys
 
 ---
 
@@ -617,22 +617,22 @@ describe('InputManager Restart Buffering', () => {
 
 ## Definition of Done
 
-- [ ] InputManager singleton implemented with all public methods
-- [ ] All keyboard inputs registered correctly (WASD, Arrows, Space, R, ESC)
-- [ ] Input polling happens every frame with accurate state tracking
-- [ ] "Pressed this frame" detection works correctly
-- [ ] Restart buffering prevents spam (300ms cooldown)
-- [ ] Integrated with BootScene (registered in scene registry)
-- [ ] Integrated with GameScene (update() called every frame)
-- [ ] Unit tests achieve 85%+ coverage
-- [ ] Manual testing confirms all keys work and feel responsive
-- [ ] No memory leaks when destroying InputManager
-- [ ] Scene shutdown event destroys singleton without manual intervention
-- [ ] No browser default actions triggered by registered keys
-- [ ] TypeScript compiles with zero errors in strict mode
-- [ ] ESLint passes with zero warnings
-- [ ] Code reviewed and approved
-- [ ] Story marked as "Complete"
+- [x] InputManager singleton implemented with all public methods
+- [x] All keyboard inputs registered correctly (WASD, Arrows, Space, R, ESC)
+- [x] Input polling happens every frame with accurate state tracking
+- [x] "Pressed this frame" detection works correctly
+- [x] Restart buffering prevents spam (300ms cooldown)
+- [x] Integrated with BootScene (registered in scene registry)
+- [x] Integrated with GameScene (update() called every frame)
+- [x] Unit tests achieve 85%+ coverage
+- [x] Manual testing confirms all keys work and feel responsive
+- [x] No memory leaks when destroying InputManager
+- [x] Scene shutdown event destroys singleton without manual intervention
+- [x] No browser default actions triggered by registered keys
+- [x] TypeScript compiles with zero errors in strict mode
+- [x] ESLint passes with zero warnings
+- [x] Code reviewed and approved
+- [x] Story marked as "Complete"
 
 ---
 
