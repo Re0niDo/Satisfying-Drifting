@@ -1,6 +1,6 @@
 ---
 description: "Activates the Business Analyst agent persona."
-tools: ['edit', 'runNotebooks', 'search', 'new', 'runCommands', 'runTasks', 'upstash/context7/*', 'usages', 'vscodeAPI', 'problems', 'changes', 'testFailure', 'openSimpleBrowser', 'fetch', 'githubRepo', 'extensions', 'todos']
+tools: ['edit', 'runNotebooks', 'search', 'new', 'runCommands', 'runTasks', 'context7/*', 'usages', 'vscodeAPI', 'problems', 'changes', 'testFailure', 'openSimpleBrowser', 'fetch', 'githubRepo', 'extensions', 'todos']
 ---
 
 <!-- Powered by BMAD™ Core -->
