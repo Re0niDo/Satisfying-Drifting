@@ -28,8 +28,15 @@ export class DriftPhysics {
     private velocityVector: Phaser.Math.Vector2;
     private forwardVector: Phaser.Math.Vector2;
     
-    // Current state (drift mechanics added in Story 2.1.5)
+    // Drift state tracking (Story 2.1.5)
     private currentState: DriftState = DriftState.Normal;
+    private targetState: DriftState = DriftState.Normal;
+    private stateTransitionProgress: number = 1.0; // 1.0 = fully transitioned
+    
+    // Drift calculations
+    private lateralVelocity: number = 0;
+    private driftAngle: number = 0;
+    private lateralAxis: Phaser.Math.Vector2;
     
     /**
      * Create DriftPhysics component
@@ -44,6 +51,7 @@ export class DriftPhysics {
         // Initialize reusable vectors
         this.velocityVector = new Phaser.Math.Vector2();
         this.forwardVector = new Phaser.Math.Vector2();
+        this.lateralAxis = new Phaser.Math.Vector2();
 
         // Configure Arcade Physics body with damping and speed limits
         const config = PhysicsConfig.car;
@@ -60,11 +68,13 @@ export class DriftPhysics {
      * 
      * Execution order is critical:
      * 1. Calculate forward vector (used by all other systems)
-     * 2. Acceleration (change velocity based on input)
-     * 3. Steering (change rotation based on input and speed)
-     * 4. Friction (reduce velocity magnitude)
-     * 5. Drag (sync Arcade Body damping/drag)
-     * 6. Speed limiting (enforce forward and reverse speed caps)
+     * 2. Detect and update drift state (Story 2.1.5)
+     * 3. Acceleration (change velocity based on input)
+     * 4. Steering (change rotation based on input and speed)
+     * 5. Friction (reduce velocity magnitude - state-aware in 2.1.5)
+     * 6. Speed loss (during drift/handbrake - Story 2.1.5)
+     * 7. Drag (sync Arcade Body damping/drag)
+     * 8. Speed limiting (enforce forward and reverse speed caps)
      */
     public update(delta: number): void {
         const deltaSeconds = delta / 1000;
@@ -72,10 +82,14 @@ export class DriftPhysics {
         // Calculate forward vector once per frame (reuse for all calculations)
         MathHelpers.getForwardVector(this.car.angle, this.forwardVector);
         
+        // Update drift state BEFORE applying physics (Story 2.1.5)
+        this.updateDriftState(deltaSeconds);
+        
         // Update movement systems
         this.updateAcceleration(deltaSeconds);
         this.updateSteering(deltaSeconds);
         this.updateFriction(deltaSeconds);
+        this.applySpeedLoss(deltaSeconds);
         this.applyDrag();
         
         // Enforce speed limits
@@ -174,20 +188,21 @@ export class DriftPhysics {
     }
     
     /**
-     * Apply friction (normal state only - drift mechanics in Story 2.1.5)
+     * Apply friction based on current drift state (Story 2.1.5)
      * @param delta - Time delta in seconds
      * 
      * Story 2.1.4: Always uses normal friction
-     * Story 2.1.5: Will switch between normal/drift/handbrake friction
+     * Story 2.1.5: Switches between normal/drift/handbrake friction
      */
     private updateFriction(delta: number): void {
-        const config = PhysicsConfig.car;
+        // Get effective friction based on current state and transition
+        const effectiveFriction = this.getEffectiveFriction();
         
         // Copy velocity to vector for friction calculation
         this.velocityVector.set(this.body.velocity.x, this.body.velocity.y);
         
         // Apply friction (modifies vector in-place)
-        MathHelpers.applyFriction(this.velocityVector, config.normalFriction, delta);
+        MathHelpers.applyFriction(this.velocityVector, effectiveFriction, delta);
         
         // Update body velocity
         this.body.setVelocity(this.velocityVector.x, this.velocityVector.y);
@@ -251,12 +266,184 @@ export class DriftPhysics {
     }
     
     /**
-     * Get current drift state (for debugging)
-     * Story 2.1.5: Will return actual drift state
+     * Update drift state based on lateral velocity and input
+     * @param delta - Time delta in seconds
+     */
+    private updateDriftState(delta: number): void {
+        const config = PhysicsConfig.car;
+        
+        // Calculate lateral velocity and drift angle
+        this.calculateLateralVelocity();
+        
+        // Determine target state based on physics and input
+        let newTargetState: DriftState;
+        
+        if (this.inputManager.isHandbraking()) {
+            // Handbrake overrides everything
+            newTargetState = DriftState.Handbrake;
+        } else if (Math.abs(this.lateralVelocity) >= config.driftThreshold) {
+            // Lateral velocity high enough for drift
+            newTargetState = DriftState.Drift;
+        } else {
+            // Normal driving
+            newTargetState = DriftState.Normal;
+        }
+        
+        // Update target state if changed
+        if (newTargetState !== this.targetState) {
+            this.targetState = newTargetState;
+            this.stateTransitionProgress = 0; // Start transition
+        }
+        
+        // Lerp toward target state
+        this.updateStateTransition(delta);
+        
+        // Update current state when transition completes
+        if (this.stateTransitionProgress >= 1.0) {
+            this.currentState = this.targetState;
+        }
+    }
+    
+    /**
+     * Calculate lateral velocity (perpendicular to car heading)
+     */
+    private calculateLateralVelocity(): void {
+        const velocity = this.body.velocity;
+        const forward = this.forwardVector;
+        
+        // Perpendicular axis (rotate forward 90 degrees without allocating)
+        this.lateralAxis.set(-forward.y, forward.x);
+        
+        const forwardSpeed = velocity.dot(forward);
+        this.lateralVelocity = velocity.dot(this.lateralAxis);
+        
+        // Drift angle derived from forward vs lateral components
+        this.driftAngle = MathHelpers.radToDeg(Math.atan2(this.lateralVelocity, forwardSpeed));
+    }
+    
+    /**
+     * Update state transition progress using lerp
+     * @param delta - Time delta in seconds
+     */
+    private updateStateTransition(delta: number): void {
+        const config = PhysicsConfig.car;
+        
+        if (this.stateTransitionProgress < 1.0) {
+            // Lerp toward target state over transitionTime seconds
+            const lerpSpeed = 1.0 / config.transitionTime;
+            this.stateTransitionProgress += lerpSpeed * delta;
+            this.stateTransitionProgress = Math.min(this.stateTransitionProgress, 1.0);
+        }
+    }
+    
+    /**
+     * Get effective friction coefficient based on current state and transition
+     */
+    private getEffectiveFriction(): number {
+        const config = PhysicsConfig.car;
+        
+        // If fully transitioned, return target state friction
+        if (this.stateTransitionProgress >= 1.0) {
+            switch (this.currentState) {
+                case DriftState.Normal:
+                    return config.normalFriction;
+                case DriftState.Drift:
+                    return config.driftFriction;
+                case DriftState.Handbrake:
+                    return config.handBrakeFriction;
+            }
+        }
+        
+        // Mid-transition: lerp between current and target friction
+        const currentFriction = this.getFrictionForState(this.currentState);
+        const targetFriction = this.getFrictionForState(this.targetState);
+        
+        return MathHelpers.lerp(
+            currentFriction,
+            targetFriction,
+            this.stateTransitionProgress
+        );
+    }
+    
+    /**
+     * Get friction coefficient for a specific state
+     * @param state - The drift state to get friction for
+     */
+    private getFrictionForState(state: DriftState): number {
+        const config = PhysicsConfig.car;
+        switch (state) {
+            case DriftState.Normal:
+                return config.normalFriction;
+            case DriftState.Drift:
+                return config.driftFriction;
+            case DriftState.Handbrake:
+                return config.handBrakeFriction;
+        }
+    }
+    
+    /**
+     * Apply speed loss during drift and handbrake
+     * @param delta - Time delta in seconds
+     */
+    private applySpeedLoss(delta: number): void {
+        const config = PhysicsConfig.car;
+        
+        if (this.currentState === DriftState.Drift) {
+            // 5% speed loss per second during drift
+            const speedRetention = Math.pow(config.driftSpeedRetention, delta);
+            this.body.velocity.x *= speedRetention;
+            this.body.velocity.y *= speedRetention;
+        } else if (this.currentState === DriftState.Handbrake) {
+            // 2% speed loss per second during handbrake
+            const speedRetention = Math.pow(config.handbrakeSpeedRetention, delta);
+            this.body.velocity.x *= speedRetention;
+            this.body.velocity.y *= speedRetention;
+        }
+        
+        // Normal state: no additional speed loss beyond friction
+    }
+    
+    /**
+     * Get current drift state (for debugging and other systems)
      * @returns Current drift state
      */
     public getDriftState(): DriftState {
         return this.currentState;
+    }
+    
+    /**
+     * Get drift angle in degrees
+     * Positive = drifting right, Negative = drifting left
+     * @returns Drift angle in degrees
+     */
+    public getDriftAngle(): number {
+        return this.driftAngle;
+    }
+    
+    /**
+     * Get lateral velocity (perpendicular to heading)
+     * @returns Lateral velocity in pixels per second
+     */
+    public getLateralVelocity(): number {
+        return this.lateralVelocity;
+    }
+    
+    /**
+     * Check if car is currently drifting
+     * @returns True if in Drift or Handbrake state
+     */
+    public isDrifting(): boolean {
+        return this.currentState === DriftState.Drift || 
+               this.currentState === DriftState.Handbrake;
+    }
+    
+    /**
+     * Get state transition progress (0-1)
+     * Used for visual feedback (particle effects, etc.)
+     * @returns Progress from 0 (just started transition) to 1 (fully transitioned)
+     */
+    public getStateTransitionProgress(): number {
+        return this.stateTransitionProgress;
     }
     
     /**
@@ -278,5 +465,6 @@ export class DriftPhysics {
         this.inputManager = null as any;
         this.velocityVector = null as any;
         this.forwardVector = null as any;
+        this.lateralAxis = null as any;
     }
 }
