@@ -39,7 +39,7 @@ export const ImageAssets = {
  */
 export const TrackAssets = {
     TRACK_TUTORIAL: { 
-        key: 'track-tutorial', 
+        key: 'track_tutorial', 
         path: 'assets/images/tracks/tutorial.png',
         format: 'png'
     },

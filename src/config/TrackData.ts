@@ -22,28 +22,38 @@ const TUTORIAL_TRACK: ITrackConfig = {
     
     width: 150,  // Wide track for forgiving learning
     
-    // Spawn point: Center of track, facing right
+    // Spawn point: Bottom center, facing up toward first turn
     spawnPoint: {
-        x: 640,
-        y: 360,
-        angle: 0
+        x: 640,   // Center X of 1280 width
+        y: 600,   // Near bottom of 720 height
+        angle: 270 // Facing up (270 degrees = north)
     },
     
-    // Placeholder drive area (simple rectangle for now)
-    // Will be replaced with actual track polygon in visual implementation story
+    // Drive area polygon (outer boundary clockwise, inner hole counter-clockwise)
+    // Defines the drivable area of the track
     driveArea: {
         outerBoundary: [
-            { x: 200, y: 200 },
-            { x: 1080, y: 200 },
-            { x: 1080, y: 520 },
-            { x: 200, y: 520 }
+            { x: 200, y: 150 },   // Top-left outer
+            { x: 1080, y: 150 },  // Top-right outer
+            { x: 1150, y: 220 },  // Right curve start
+            { x: 1150, y: 500 },  // Right curve end
+            { x: 1080, y: 570 },  // Bottom-right outer
+            { x: 200, y: 570 },   // Bottom-left outer
+            { x: 130, y: 500 },   // Left curve start
+            { x: 130, y: 220 },   // Left curve end
+            { x: 200, y: 150 }    // Close outer boundary
         ],
         innerBoundaries: [
             [
-                { x: 350, y: 350 },
-                { x: 350, y: 370 },
-                { x: 930, y: 370 },
-                { x: 930, y: 350 }
+                { x: 350, y: 270 },   // Top-left inner
+                { x: 280, y: 340 },   // Left inner curve start
+                { x: 280, y: 380 },   // Left inner curve end
+                { x: 350, y: 450 },   // Bottom-left inner
+                { x: 930, y: 450 },   // Bottom-right inner
+                { x: 1000, y: 380 },  // Right inner curve start
+                { x: 1000, y: 340 },  // Right inner curve end
+                { x: 930, y: 270 },   // Top-right inner
+                { x: 350, y: 270 }    // Close inner boundary
             ]
         ]
     },

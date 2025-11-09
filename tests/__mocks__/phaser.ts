@@ -89,6 +89,48 @@ class Graphics {
   destroy = jest.fn();
 }
 
+class Image {
+  public x: number;
+  public y: number;
+  public depth: number = 0;
+  public originX: number = 0.5;
+  public originY: number = 0.5;
+  public texture: { key: string };
+  public scene: any;
+
+  constructor(
+    scene: any,
+    x: number,
+    y: number,
+    texture: string
+  ) {
+    this.scene = scene;
+    this.x = x;
+    this.y = y;
+    this.texture = { key: texture };
+  }
+
+  setOrigin = jest.fn((x: number, y: number) => {
+    this.originX = x;
+    this.originY = y;
+    return this;
+  });
+  
+  setDepth = jest.fn((depth: number) => {
+    this.depth = depth;
+    return this;
+  });
+
+  removeFromUpdateList = jest.fn(() => this);
+
+  // Mock destroy to call preDestroy if it exists
+  destroy = jest.fn(function(this: any) {
+    if (this.preDestroy && typeof this.preDestroy === 'function') {
+      this.preDestroy();
+    }
+  });
+}
+
 class Sprite {
   public x: number;
   public y: number;
@@ -338,6 +380,7 @@ class Scene {
 const GameObjects = {
   Text,
   Rectangle,
+  Image,
   Sprite,
   Graphics,
 };
@@ -431,6 +474,9 @@ const PhaserMath = {
   Vector2,
   Clamp: (value: number, min: number, max: number) => {
     return value < min ? min : value > max ? max : value;
+  },
+  DegToRad: (degrees: number) => {
+    return degrees * (globalThis.Math.PI / 180);
   },
 };
 

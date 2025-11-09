@@ -63,8 +63,24 @@ describe('TrackData', () => {
             expect(typeof tutorialTrack!.spawnPoint.y).toBe('number');
             expect(typeof tutorialTrack!.spawnPoint.angle).toBe('number');
             expect(tutorialTrack!.spawnPoint.x).toBe(640);
-            expect(tutorialTrack!.spawnPoint.y).toBe(360);
-            expect(tutorialTrack!.spawnPoint.angle).toBe(0);
+            expect(tutorialTrack!.spawnPoint.y).toBe(600);
+            expect(tutorialTrack!.spawnPoint.angle).toBe(270);
+        });
+
+        it('should have spawn point within game viewport', () => {
+            const spawnX = tutorialTrack!.spawnPoint.x;
+            const spawnY = tutorialTrack!.spawnPoint.y;
+            
+            expect(spawnX).toBeGreaterThanOrEqual(0);
+            expect(spawnX).toBeLessThanOrEqual(1280);
+            expect(spawnY).toBeGreaterThanOrEqual(0);
+            expect(spawnY).toBeLessThanOrEqual(720);
+        });
+
+        it('should have spawn angle between 0-360 degrees', () => {
+            const angle = tutorialTrack!.spawnPoint.angle;
+            expect(angle).toBeGreaterThanOrEqual(0);
+            expect(angle).toBeLessThan(360);
         });
 
         it('should have valid gameplay parameters', () => {
@@ -83,6 +99,114 @@ describe('TrackData', () => {
 
         it('should use kebab-case for track ID', () => {
             expect(tutorialTrack!.id).toMatch(/^[a-z]+(-[a-z]+)*$/);
+        });
+
+        // Story 2.2.2: Drive area polygon validation
+        describe('driveArea polygon structure', () => {
+            it('should have outer boundary with minimum 8 points for smooth curves', () => {
+                const outerBoundary = tutorialTrack!.driveArea.outerBoundary;
+                expect(outerBoundary.length).toBeGreaterThanOrEqual(8);
+            });
+
+            it('should have all outer boundary points within game viewport', () => {
+                const outerBoundary = tutorialTrack!.driveArea.outerBoundary;
+                
+                outerBoundary.forEach((point) => {
+                    expect(point.x).toBeGreaterThanOrEqual(0);
+                    expect(point.x).toBeLessThanOrEqual(1280);
+                    expect(point.y).toBeGreaterThanOrEqual(0);
+                    expect(point.y).toBeLessThanOrEqual(720);
+                });
+            });
+
+            it('should have inner boundary defined as an array', () => {
+                const innerBoundaries = tutorialTrack!.driveArea.innerBoundaries;
+                expect(innerBoundaries).toBeDefined();
+                expect(Array.isArray(innerBoundaries)).toBe(true);
+                expect(innerBoundaries!.length).toBeGreaterThan(0);
+            });
+
+            it('should have inner boundary with minimum 8 points', () => {
+                const innerBoundary = tutorialTrack!.driveArea.innerBoundaries![0];
+                expect(innerBoundary.length).toBeGreaterThanOrEqual(8);
+            });
+
+            it('should have all inner boundary points within game viewport', () => {
+                const innerBoundary = tutorialTrack!.driveArea.innerBoundaries![0];
+                
+                innerBoundary.forEach((point) => {
+                    expect(point.x).toBeGreaterThanOrEqual(0);
+                    expect(point.x).toBeLessThanOrEqual(1280);
+                    expect(point.y).toBeGreaterThanOrEqual(0);
+                    expect(point.y).toBeLessThanOrEqual(720);
+                });
+            });
+
+            it('should have outer boundary as closed polygon (first point equals last)', () => {
+                const outerBoundary = tutorialTrack!.driveArea.outerBoundary;
+                const firstPoint = outerBoundary[0];
+                const lastPoint = outerBoundary[outerBoundary.length - 1];
+                
+                expect(lastPoint.x).toBe(firstPoint.x);
+                expect(lastPoint.y).toBe(firstPoint.y);
+            });
+
+            it('should have inner boundary as closed polygon (first point equals last)', () => {
+                const innerBoundary = tutorialTrack!.driveArea.innerBoundaries![0];
+                const firstPoint = innerBoundary[0];
+                const lastPoint = innerBoundary[innerBoundary.length - 1];
+                
+                expect(lastPoint.x).toBe(firstPoint.x);
+                expect(lastPoint.y).toBe(firstPoint.y);
+            });
+
+            it('should have outer boundary forming valid polygon (area > 0)', () => {
+                const outerBoundary = tutorialTrack!.driveArea.outerBoundary;
+                
+                // Calculate polygon area using shoelace formula
+                let area = 0;
+                for (let i = 0; i < outerBoundary.length - 1; i++) {
+                    const p1 = outerBoundary[i];
+                    const p2 = outerBoundary[i + 1];
+                    area += (p1.x * p2.y - p2.x * p1.y);
+                }
+                area = Math.abs(area / 2);
+                
+                expect(area).toBeGreaterThan(0);
+            });
+
+            it('should have inner boundary forming valid polygon (area > 0)', () => {
+                const innerBoundary = tutorialTrack!.driveArea.innerBoundaries![0];
+                
+                // Calculate polygon area using shoelace formula
+                let area = 0;
+                for (let i = 0; i < innerBoundary.length - 1; i++) {
+                    const p1 = innerBoundary[i];
+                    const p2 = innerBoundary[i + 1];
+                    area += (p1.x * p2.y - p2.x * p1.y);
+                }
+                area = Math.abs(area / 2);
+                
+                expect(area).toBeGreaterThan(0);
+            });
+
+            it('should have inner boundary smaller than outer boundary', () => {
+                // Calculate areas
+                const calculateArea = (points: { x: number; y: number }[]) => {
+                    let area = 0;
+                    for (let i = 0; i < points.length - 1; i++) {
+                        const p1 = points[i];
+                        const p2 = points[i + 1];
+                        area += (p1.x * p2.y - p2.x * p1.y);
+                    }
+                    return Math.abs(area / 2);
+                };
+
+                const outerArea = calculateArea(tutorialTrack!.driveArea.outerBoundary);
+                const innerArea = calculateArea(tutorialTrack!.driveArea.innerBoundaries![0]);
+                
+                expect(innerArea).toBeLessThan(outerArea);
+            });
         });
     });
 

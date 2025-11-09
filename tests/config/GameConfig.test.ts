@@ -7,6 +7,7 @@ jest.mock('phaser', () => {
             Scene: class {},
             GameObjects: {
                 Sprite: class {},
+                Image: class {},
             },
             Scale: {
                 FIT: 1,

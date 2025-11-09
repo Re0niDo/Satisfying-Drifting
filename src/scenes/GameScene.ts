@@ -2,7 +2,9 @@ import Phaser from 'phaser';
 import type { GameSceneData, MenuSceneData } from '../types/SceneData';
 import { isDevEnvironment } from '../utils/env';
 import { Car } from '../gameObjects/Car';
+import { Track } from '../gameObjects/Track';
 import { InputManager } from '../systems/InputManager';
+import { getTrackById } from '../config/TrackData';
 
 /**
  * GameScene - Main gameplay scene
@@ -19,7 +21,9 @@ export class GameScene extends Phaser.Scene {
 
   // Game objects
   private car?: Car;
+  private track?: Track;
   private inputManager?: InputManager;
+  private debugGraphics?: Phaser.GameObjects.Graphics;
 
   // Text display objects
   private trackText?: Phaser.GameObjects.Text;
@@ -77,6 +81,22 @@ export class GameScene extends Phaser.Scene {
       console.error('[GameScene] InputManager not found in registry');
     } else if (isDevEnvironment()) {
       console.log('[GameScene] InputManager retrieved from registry');
+    }
+
+    // Load track configuration and create track background
+    const trackConfig = getTrackById(this.currentTrackId);
+    if (trackConfig) {
+      // Create track background
+      this.track = new Track(this, trackConfig);
+
+      // Development mode: Draw debug drive area boundaries
+      if (isDevEnvironment()) {
+        this.debugGraphics = this.add.graphics();
+        this.track.debugDrawBoundary(this.debugGraphics);
+        console.log('[GameScene] Track debug boundaries rendered');
+      }
+    } else {
+      console.warn(`[GameScene] Track not found: ${this.currentTrackId}, continuing without track background`);
     }
 
     // Create placeholder car sprite texture (32x48px red rectangle)
@@ -293,6 +313,17 @@ export class GameScene extends Phaser.Scene {
   shutdown(): void {
     if (isDevEnvironment()) {
       console.log('[GameScene] Shutdown initiated');
+    }
+
+    // Clean up debug graphics
+    if (this.debugGraphics) {
+      this.debugGraphics.destroy();
+      this.debugGraphics = undefined;
+    }
+
+    // Clean up track (Phaser destroys it automatically, just clear reference)
+    if (this.track) {
+      this.track = undefined;
     }
 
     // Clean up car
